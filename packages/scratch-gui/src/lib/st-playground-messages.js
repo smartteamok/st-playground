@@ -25,6 +25,15 @@ const KEYS = [
     'gui.telemetryOptIn.optOutText'
 ];
 
+/**
+ * Keys whose value is the same in every locale. The default sprite's sound is a
+ * blip, not a cat, so scratch-l10n's translations of "Meow" would name it after
+ * a sound it no longer makes.
+ */
+const FIXED = {
+    'gui.defaultProject.meow': 'Blip'
+};
+
 const overlayLocale = messages => {
     const next = {...messages};
     for (const key of KEYS) {
@@ -35,7 +44,7 @@ const overlayLocale = messages => {
             .replaceAll('Scratch 3.0', BRAND)
             .replaceAll('Scratch', BRAND);
     }
-    return next;
+    return {...next, ...FIXED};
 };
 
 const overlaid = {};
