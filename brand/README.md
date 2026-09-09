@@ -6,7 +6,7 @@ not conflict.
 
 | File | Used as |
 |---|---|
-| `st-playground-logo.svg` | Menu bar wordmark (`scratch-logo.svg` and the four time-travel variants). Smart TEAM blanco (bloques blancos + tagline). |
+| `st-playground-logo.svg` | Menu bar wordmark (`scratch-logo.svg` and the four time-travel variants). Vector Smart TEAM blanco (curvas). |
 | `st-playground-logo-compact.svg` | Compact / Android wordmark: the white **S** block (`scratch-logo-android.svg`) |
 | `st-playground-icon.svg` | Isotype (same S block) |
 | `st-playground-icon-512.png` | Installer icon and source for the `.ico` |
