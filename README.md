@@ -98,8 +98,10 @@ portable para Windows; AppImage solo como verificación en Linux.
 ```bash
 npm run compile --workspace @st-playground/desktop
 npm run start --workspace @st-playground/desktop
-npm run dist:win --workspace @st-playground/desktop
+npm run dist:win --workspace @st-playground/desktop   # ZIP portable; NSIS requiere Windows o wine
 ```
+
+Artefactos medidos: AppImage 235 MB, ZIP Windows 261 MB. El Setup.exe NSIS queda configurado (`/S`, per-machine) y se genera en una máquina Windows.
 
 Guías: [`docs/instalacion-escuela.md`](./docs/instalacion-escuela.md),
 [`docs/guia-docente.md`](./docs/guia-docente.md).

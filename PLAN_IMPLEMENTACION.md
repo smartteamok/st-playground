@@ -776,23 +776,25 @@ mete la biblioteca en `extraResources` para dejarla fuera del asar.
 ```bash
 npm run compile --workspace @st-playground/desktop
 npm run start --workspace @st-playground/desktop          # webpack-dev-server + Electron
-npm run dist:linux --workspace @st-playground/desktop     # AppImage de verificación
-npm run dist:win --workspace @st-playground/desktop       # NSIS + ZIP (hace falta wine desde Linux)
+npm run dist:linux --workspace @st-playground/desktop     # AppImage de verificación (235 MB)
+npm run dist:win --workspace @st-playground/desktop       # ZIP portable (261 MB); NSIS pide wine o Windows
 node scripts/check-desktop.mjs
 ```
+
+Tamaños medidos: AppImage 235 MB, ZIP Windows 261 MB, carpeta desempaquetada 445 MB.
 
 Documentación para la escuela: [`docs/instalacion-escuela.md`](./docs/instalacion-escuela.md),
 [`docs/guia-docente.md`](./docs/guia-docente.md).
 
 ### Criterios de aceptación
 
-- [x] Spike `app://`: miniaturas y fetch-worker.
+- [x] Spike `app://`: 333/333 miniaturas, fetch-worker, 6 extensiones, 0 requests externas.
 - [x] Workspace `packages/st-playground-desktop` con renderer aislado y sandbox.
-- [x] Guardado por `will-download` y reapertura por argv / instancia única.
+- [x] Guardado por `will-download` y reapertura por argv (`check-desktop.mjs` sobre el build desempaquetado).
 - [x] `docs/instalacion-escuela.md` y `docs/guia-docente.md`.
-- [ ] Medición en esta VM: `check-desktop.mjs`, AppImage y, si wine está, el `.exe`.
-- [ ] Instalación real en una VM Windows con el adaptador de red
-      deshabilitado (queda del lado de la escuela).
+- [x] AppImage de verificación (235 MB) y ZIP portable Windows (261 MB).
+- [ ] NSIS Setup.exe: electron-builder está configurado (`/S`, perMachine); hace falta wine o una máquina Windows para generarlo.
+- [ ] Instalación real en una VM Windows con el adaptador de red deshabilitado (queda del lado de la escuela).
 
 ### Punto de validación
 

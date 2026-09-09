@@ -242,7 +242,7 @@ Sin firma. El instalador lo despliega el técnico, no lo baja un docente, así
 que la advertencia de SmartScreen no es el camino habitual. Si más adelante
 el instalador se publica para descarga directa, hay que comprar un
 certificado EV o usar Azure Trusted Signing. Hasta entonces
-`signAndEditExecutable: false`.
+`signExecutable: false`.
 
 ## D-20. El escritorio sirve la GUI por `app://`, no por `file://`
 

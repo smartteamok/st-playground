@@ -34,9 +34,11 @@ if (process.env.ST_PLAYGROUND_NO_SANDBOX === '1') {
     app.commandLine.appendSwitch('no-sandbox');
 }
 
-const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) {
-    app.quit();
+if (process.env.ST_PLAYGROUND_ALLOW_MULTI !== '1') {
+    const gotLock = app.requestSingleInstanceLock();
+    if (!gotLock) {
+        app.quit();
+    }
 }
 
 const editorBase = () => (isDevServer ? DEV_URL : editorUrl());
@@ -52,7 +54,8 @@ const makeWindowUrl = (fileName = 'index.html', search = '') => {
 
 const readProjectFile = async filePath => {
     try {
-        return await fs.promises.readFile(filePath);
+        const data = await fs.promises.readFile(filePath);
+        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     } catch (error) {
         const parent = windows.main || null;
         await dialog.showMessageBox(parent, {

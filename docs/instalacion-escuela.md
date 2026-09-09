@@ -12,10 +12,14 @@ npm run dist:win --workspace @st-playground/desktop
 
 Eso produce, en `packages/st-playground-desktop/release/`:
 
-| Archivo | Para qué |
-|---|---|
-| `ST-Playground-<versión>-x64-Setup.exe` | Instalador NSIS, el que va en la imagen de disco |
-| `ST-Playground-<versión>-win-x64.zip` | Copia portable: se descomprime en un pendrive y se ejecuta sin instalar |
+| Archivo | Tamaño medido | Para qué |
+|---|---|---|
+| `ST-Playground-<versión>-x64-Setup.exe` | hay que generarlo en Windows | Instalador NSIS, el que va en la imagen de disco |
+| `ST-Playground-<versión>-win-x64.zip` | 261 MB | Copia portable: se descomprime en un pendrive y se ejecuta sin instalar |
+
+Tamaños de referencia medidos al cerrar la fase 4: el ZIP portable pesa **261 MB**, el AppImage de verificación **235 MB**, y la carpeta desempaquetada **445 MB** (runtime de Electron + GUI + 57 MB de biblioteca). Cabe en un pendrive sin problema.
+
+El instalador NSIS no se puede generar en Linux sin `wine`. En esta VM no está instalado (`spawn wine ENOENT`). El ZIP portable sí se genera acá y es el que se usa hasta tener una máquina Windows. En esa máquina, el mismo comando `dist:win` produce también el Setup.exe.
 
 ## Instalación silenciosa (técnico)
 

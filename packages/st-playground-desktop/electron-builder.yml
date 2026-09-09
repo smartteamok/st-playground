@@ -33,7 +33,7 @@ fileAssociations:
     role: Editor
 win:
   icon: buildResources/icon.ico
-  signAndEditExecutable: false
+  signExecutable: false
   target:
     - target: nsis
       arch:
@@ -53,6 +53,7 @@ linux:
   target:
     - AppImage
   executableName: st-playground
+  desktopName: ST-Playground.desktop
   category: Education
   icon: buildResources/icon.png
   artifactName: "${productName}-${version}-${arch}.${ext}"

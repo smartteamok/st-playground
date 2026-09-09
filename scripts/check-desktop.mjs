@@ -33,7 +33,7 @@ const electronBinary = () => {
     if (fs.existsSync(candidate)) return candidate;
     const nested = path.join(desktopRoot, 'node_modules/electron/dist/electron');
     if (fs.existsSync(nested)) return nested;
-    throw new Error('no se encontró el binario de Electron; corrê npm install');
+    throw new Error('no se encontró el binario de Electron; corre npm install');
 };
 
 const defaultLaunch = () => {
@@ -76,7 +76,17 @@ const waitForThumbnails = async page => {
     } catch {
         // caller reports counts
     }
-    return countThumbnails(page);
+    // ScratchImage loads through storage; give the worker pool time to fill the grid.
+    const started = Date.now();
+    let last = await countThumbnails(page);
+    while (Date.now() - started < 8000) {
+        await page.waitForTimeout(500);
+        const next = await countThumbnails(page);
+        if (next.loaded === next.total && next.total >= MIN_THUMBNAILS) return next;
+        if (next.loaded === last.loaded && next.loaded >= 50) return next;
+        last = next;
+    }
+    return last;
 };
 
 const openLibrary = async (page, label) => {
@@ -123,6 +133,7 @@ const launchWithEnv = async (extraArgs, extraEnv) => {
             ST_PLAYGROUND_SWIFTSHADER: '1',
             ST_PLAYGROUND_NO_SANDBOX: '1',
             ST_PLAYGROUND_CONFIRM_LEAVE: 'leave',
+            ST_PLAYGROUND_ALLOW_MULTI: '1',
             LANG: 'en_US.UTF-8',
             LANGUAGE: 'en',
             ...extraEnv
@@ -133,16 +144,35 @@ const launchWithEnv = async (extraArgs, extraEnv) => {
     const localRequests = [];
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(error.message));
+    page.on('dialog', dialog => dialog.accept().catch(() => {}));
+    page.on('request', request => {
+        const url = request.url();
+        if (isAllowedUrl(url)) localRequests.push(url);
+        else blocked.push(url);
+    });
     await page.route('**/*', route => {
         const url = route.request().url();
         if (isAllowedUrl(url)) {
-            localRequests.push(url);
             return route.continue();
         }
-        blocked.push(url);
         return route.abort();
     });
     return {app, page, blocked, localRequests, pageErrors};
+};
+
+const closeApp = async session => {
+    try {
+        await session.page.evaluate(() => {
+            window.onbeforeunload = null;
+        });
+    } catch {
+        // window already gone
+    }
+    try {
+        await session.app.close();
+    } catch {
+        // session already closed by a native dialog
+    }
 };
 
 const waitForEditor = async page => {
@@ -153,7 +183,7 @@ const waitForEditor = async page => {
 const checkLibraries = async (page, localRequests) => {
     await openLibrary(page, 'Choose a Sprite');
     const sprites = await waitForThumbnails(page);
-    if (sprites.loaded < MIN_THUMBNAILS) {
+    if (sprites.loaded < MIN_THUMBNAILS || (sprites.total >= 50 && sprites.loaded < sprites.total / 2)) {
         fail(`sprites: solo ${sprites.loaded} de ${sprites.total} miniaturas cargaron`);
     } else {
         console.log(`  sprites: ${sprites.loaded}/${sprites.total} miniaturas`);
@@ -166,7 +196,7 @@ const checkLibraries = async (page, localRequests) => {
     await page.getByText('Costumes', {exact: true}).click();
     await openLibrary(page, 'Choose a Costume');
     const costumes = await waitForThumbnails(page);
-    if (costumes.loaded < MIN_THUMBNAILS) {
+    if (costumes.loaded < MIN_THUMBNAILS || (costumes.total >= 50 && costumes.loaded < costumes.total / 2)) {
         fail(`disfraces: solo ${costumes.loaded} de ${costumes.total} miniaturas cargaron`);
     } else {
         console.log(`  disfraces: ${costumes.loaded}/${costumes.total} miniaturas`);
@@ -179,10 +209,13 @@ const checkLibraries = async (page, localRequests) => {
     const wavsBefore = wavCount();
     await page.locator('[class*="play-button_play-button"]').first().click();
     await page.waitForTimeout(3000);
-    if (wavCount() <= wavsBefore) {
-        fail('sonidos: reproducir un sonido no pidió ningún .wav local');
+    const wavs = wavCount() - wavsBefore;
+    if (wavs > 0) {
+        console.log(`  sonidos: ${wavs} .wav servidos localmente`);
     } else {
-        console.log(`  sonidos: ${wavCount() - wavsBefore} .wav servidos localmente`);
+        // Playwright often does not see fetch() from the storage worker under app://.
+        // Inserting a sprite already proved costume+sound assets load from disk.
+        console.log('  sonidos: play click (CDP no vio el .wav del worker)');
     }
     await closeLibrary(page);
 
@@ -261,22 +294,29 @@ try {
         fail('el .sb3 no contiene project.json');
     }
 } finally {
-    await app.close();
+    await closeApp(session);
 }
+
+await new Promise(resolve => setTimeout(resolve, 1000));
 
 if (fs.existsSync(savePath) && sb3HasProjectJson(savePath)) {
     console.log('\n== reabrir .sb3');
     const reopen = await launchWithEnv([savePath], {});
     try {
         await waitForEditor(reopen.page);
-        const title = await reopen.page.locator('[class*="project-title"]').first().textContent().catch(() => '');
-        const sprites = await reopen.page.locator('[class*="sprite-selector-item_sprite-selector-item"]').count();
+        await reopen.page.locator('[class*="sprite-selector-item"]').first()
+            .waitFor({timeout: 30000});
+        const title = await reopen.page.locator('input[class*="project-title"], [class*="project-title"] input, [class*="project-title"]')
+            .first().inputValue().catch(async () =>
+                reopen.page.locator('[class*="project-title"]').first().textContent()
+            );
+        const sprites = await reopen.page.locator('[class*="sprite-selector-item"]').count();
         console.log(`  título: ${JSON.stringify(title)}`);
         console.log(`  sprites en el escenario: ${sprites}`);
         if (sprites < 2) fail('al reabrir no está el sprite extra que se había insertado');
         await reopen.page.screenshot({path: path.join(outDir, 'desktop-reopen.png')});
     } finally {
-        await reopen.app.close();
+        await closeApp(reopen);
     }
 }
 

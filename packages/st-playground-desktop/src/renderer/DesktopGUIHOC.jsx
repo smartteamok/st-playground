@@ -43,7 +43,8 @@ const DesktopGUIHOC = function (WrappedComponent) {
                 Promise.resolve(null);
 
             initialPromise.then(initialProjectData => {
-                const hasInitialProject = Boolean(initialProjectData && initialProjectData.byteLength);
+                const bytes = initialProjectData && (initialProjectData.byteLength || initialProjectData.length);
+                const hasInitialProject = Boolean(bytes);
                 this.props.onHasInitialProject(hasInitialProject, this.props.loadingState);
                 if (!hasInitialProject) {
                     this.props.onLoadingCompleted();
