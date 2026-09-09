@@ -152,7 +152,7 @@ intentar publicar paquetes con la marca de Scratch.
 Estado: decidida.
 
 Los 1316 assets de la biblioteca (después de sacar los personajes de marca)
-pesan ~35 MB. Se descargan una vez con `scripts/fetch-library-assets.mjs` y
+pesan 57 MB. Se descargan una vez con `scripts/fetch-library-assets.mjs` y
 se commitean en `assets/library/`.
 
 La alternativa era ignorarlos y bajarlos en cada build, pero eso obliga a
@@ -184,6 +184,12 @@ escritorio, que es el entregable principal.
 
 Costo: se edita un archivo de upstream de 5 líneas. Si upstream algún día
 arregla `ScratchImage`, se puede volver a `configFactory`.
+
+Las URLs que devuelve son absolutas, resueltas contra `document.baseURI`.
+`scratch-storage` descarga desde un web worker cuando puede, y ahí una URL
+relativa se resuelve contra el script del worker: con rutas relativas todas
+las miniaturas de escritorio fallaban con 404, que `WebHelper` trata como
+"asset no encontrado" en vez de error.
 
 ## D-18. Los personajes de marca salen de la biblioteca
 

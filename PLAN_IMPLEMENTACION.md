@@ -29,7 +29,7 @@ propios: `@st-playground` (D-09).
 Fase 0  Decisiones y toolchain      sin código                       completa
 Fase 1  Upstream y build verde      el repo pasa a ser el fork       completa
 Fase 2  Rebranding y limpieza       packages/scratch-gui             completa
-Fase 3  Biblioteca propia y offline  packages/scratch-gui + assets/
+Fase 3  Biblioteca propia y offline  packages/scratch-gui + assets/    completa
 Fase 4  Desktop offline             packages/st-playground-desktop   entregable
 ------- validar en aula -------
 Fase 5  Web + LTI 1.3 + guardado    packages/st-playground-web       condicional
@@ -459,9 +459,11 @@ Medido sobre el árbol actual el 2026-09-09. Los tamaños salen de muestrear
 | `src/lib/libraries/backdrops.json` | 85 | 85 |
 | `src/lib/libraries/sounds.json` | 354 | 354 |
 
-Assets únicos: **1347** (804 SVG, 350 WAV, 193 PNG), **~36 MB**. Después de
-sacar los personajes de marca quedan **1316** y ~35 MB. La estimación de
-~300 MB que figuraba en la versión anterior de este plan era errónea.
+Assets únicos: **1347** (804 SVG, 350 WAV, 193 PNG). Después de sacar los
+personajes de marca quedan **1316**: 773 SVG (17 MB), 350 WAV (18 MB) y
+193 PNG (22 MB), **57 MB en total** una vez descargados. La estimación de
+~300 MB que figuraba en la versión anterior de este plan era errónea; el
+muestreo previo a la descarga daba ~35 MB porque subestimaba los PNG.
 
 Personajes de marca en la biblioteca (`TRADEMARK` los nombra uno por uno):
 10 sprites (Cat, Cat 2, Cat Flying, Giga, Giga Walking, Gobo, Nano, Pico,
@@ -493,7 +495,7 @@ flowchart TD
     WebStore --> Disco
 ```
 
-Dos detalles del árbol de upstream que condicionan el diseño:
+Tres detalles del árbol de upstream que condicionan el diseño:
 
 1. `components/library-item/library-item.jsx:41-49` decide por plataforma:
    en `WEB` hace `<img src>` con la URL que devolvió `getLibraryAssetUrl`, y
@@ -502,6 +504,12 @@ Dos detalles del árbol de upstream que condicionan el diseño:
    configurada sino el singleton `legacyConfig.storage.scratchStorage`. Si se
    inyecta una storage propia por `configFactory`, en escritorio conviven dos
    instancias de `ScratchStorage` y las miniaturas se rompen.
+3. `scratch-storage` descarga con `FetchWorkerTool` cuando hay web workers
+   disponibles. Dentro del worker, una URL relativa se resuelve contra el
+   script del worker (`/chunks/`) y no contra el documento, así que
+   `static/library-assets/x.svg` daba 404 y `WebHelper.load` devolvía `null`
+   sin error (un 404 no cuenta como error). La storage propia devuelve la URL
+   ya resuelta con `new URL(ruta, document.baseURI)`.
 
 Por eso la storage propia se enchufa en `legacy-config.ts` (5 líneas) y no
 por `configFactory`: así la misma instancia sirve al VM, a las miniaturas web
@@ -540,7 +548,7 @@ Node (usa `fetch` y `node:crypto`):
   contra los JSON y sale con código distinto de cero si falta o sobra algo.
   Es lo que se corre después de cada merge de upstream.
 
-`assets/library/` se commitea. Son ~35 MB contra un `.git` que ya pesa 5.3 GB
+`assets/library/` se commitea. Son 57 MB contra un `.git` que ya pesa 5.3 GB
 por la historia de upstream, y a cambio el instalador de la fase 4 se puede
 construir en una máquina sin salida a internet.
 
@@ -564,7 +572,9 @@ export class STPlaygroundStorage implements GUIStorage {
     }
 
     getLibraryAssetUrl (assetId: string, dataFormat: string): string {
-        return `${this.libraryAssetBase}/${assetId}.${dataFormat}`;
+        const relative = `${this.libraryAssetBase}/${assetId}.${dataFormat}`;
+        if (typeof document === 'undefined') return relative;
+        return new URL(relative, document.baseURI).href;
     }
 
     saveProject (): Promise<{id: ProjectId}> {
@@ -606,7 +616,7 @@ copia `static`), agregar:
 
 Cubre `npm start` y `npm run build` con la misma entrada, porque el dev
 server sirve lo que emite el plugin. No se agrega a `distConfig`: el bundle
-de librería que consumen el escritorio y la web no debe traer 35 MB de
+de librería que consumen el escritorio y la web no debe traer 57 MB de
 medios; cada aplicación los copia por su cuenta (fase 4).
 
 #### 3.5 Extensiones según plataforma (D-19)
@@ -662,7 +672,7 @@ seguridad para cada merge de upstream.
 
 Nuevos:
 
-- `assets/library/**` (1316 archivos, ~35 MB, versionados)
+- `assets/library/**` (1316 archivos, 57 MB, versionados)
 - `scripts/fetch-library-assets.mjs`
 - `scripts/check-offline.mjs`
 - `packages/scratch-gui/src/lib/st-playground-storage.ts`
@@ -675,22 +685,47 @@ Editados:
   `sounds.json`
 - `packages/scratch-gui/src/legacy-config.ts`
 - `packages/scratch-gui/src/containers/extension-library.jsx`
+- `packages/scratch-gui/src/lib/st-playground-messages.js` (el sonido del
+  sprite por defecto se llamaba "Meow" en todos los idiomas aunque en la
+  fase 2 pasó a ser un blip; cabo suelto de esa fase)
+- `packages/scratch-gui/test/unit/util/cloud-manager-hoc.test.jsx` (la suite
+  ejercita el HOC de upstream y ahora se provee ella misma la capacidad de
+  variables en la nube, que la storage propia no expone)
 - `packages/scratch-gui/webpack.config.js`
 - `README.md`
 
 ### Criterios de aceptación
 
-- [ ] `node scripts/fetch-library-assets.mjs --check` pasa y
+- [x] `node scripts/fetch-library-assets.mjs --check` pasa y
       `assets/library/` tiene 1316 archivos.
-- [ ] Ninguna entrada de `sprites.json` ni `costumes.json` menciona a los
+- [x] Ninguna entrada de `sprites.json` ni `costumes.json` menciona a los
       personajes de marca, y `sounds.json` no dice "Scratch".
-- [ ] `node scripts/check-offline.mjs` pasa: cero requests externas, las
+- [x] `node scripts/check-offline.mjs` pasa: cero requests externas, las
       cuatro bibliotecas muestran miniaturas y un sonido se reproduce.
-- [ ] Lo mismo con `?isScratchDesktop=true`, y ahí la biblioteca de
+- [x] Lo mismo con `?isScratchDesktop=true`, y ahí la biblioteca de
       extensiones muestra 6 entradas en lugar de 12.
-- [ ] En web (sin el parámetro) siguen apareciendo las 12 extensiones.
-- [ ] `npm run test:unit` en `packages/scratch-gui` sigue pasando.
-- [ ] `node scripts/check-branding.mjs` sigue pasando.
+- [x] En web (sin el parámetro) siguen apareciendo las 12 extensiones.
+- [x] `npm run test:unit` en `packages/scratch-gui` pasa (50 suites,
+      325 tests).
+- [x] `node scripts/check-branding.mjs` sigue pasando.
+
+### Resultado medido
+
+Salida de `check-offline.mjs` con la red bloqueada por completo:
+
+| | web | escritorio |
+|---|---|---|
+| Miniaturas de sprites | 333/333 | 12/333 |
+| Miniaturas de disfraces | 884/884 | 6/884 |
+| Miniaturas de fondos | 85/85 | 10/85 |
+| `.wav` servidos al reproducir | 2 | 2 |
+| Extensiones ofrecidas | 12 | 6 |
+| Requests a la red | 0 | 0 |
+
+Los números bajos de escritorio no son un fallo: `ScratchImage` carga solo lo
+visible, con una cola de seis descargas en paralelo, mientras que en web el
+navegador resuelve todos los `<img src>` de una. El umbral del verificador es
+cinco miniaturas por biblioteca.
 
 ### Riesgos
 
