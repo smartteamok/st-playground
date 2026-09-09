@@ -32,12 +32,22 @@ export class STPlaygroundStorage implements GUIStorage {
         const {AssetType} = this.scratchStorage;
         this.scratchStorage.addWebStore(
             [AssetType.ImageVector, AssetType.ImageBitmap, AssetType.Sound],
-            (asset): string => `${this.libraryAssetBase}/${asset.assetId}.${asset.dataFormat}`
+            (asset): string => this.getLibraryAssetUrl(
+                String(asset.assetId),
+                asset.dataFormat ?? asset.assetType.runtimeFormat
+            )
         );
     }
 
     getLibraryAssetUrl (assetId: string, dataFormat: string): string {
-        return `${this.libraryAssetBase}/${assetId}.${dataFormat}`;
+        const relative = `${this.libraryAssetBase}/${assetId}.${dataFormat}`;
+
+        // `scratch-storage` fetches assets from a web worker when one is
+        // available, and there a relative URL resolves against the worker
+        // script instead of the document, which 404s. Hand it an absolute URL.
+        if (typeof document === 'undefined') return relative;
+
+        return new URL(relative, document.baseURI).href;
     }
 
     setTranslatorFunction (translator: TranslatorFunction): void {
