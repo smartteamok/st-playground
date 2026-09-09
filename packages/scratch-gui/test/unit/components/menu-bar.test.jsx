@@ -45,6 +45,19 @@ describe('MenuBar Component', () => {
         </Provider>);
     };
 
+    test('menu bar with an Actividades list shows the Actividades menu', () => {
+        const onClickActividad = [{title: '5.1 · Demo', onClick: jest.fn()}];
+        const {container} = renderWithIntl(getComponent({onClickActividad}));
+        const button = container.querySelector('button[aria-label="Actividades"]');
+        expect(button).toBeTruthy();
+    });
+
+    test('menu bar with no Actividades list has no Actividades menu', () => {
+        const {container} = renderWithIntl(getComponent());
+        const button = container.querySelector('button[aria-label="Actividades"]');
+        expect(button).toBeFalsy();
+    });
+
     test('menu bar with no About handler has no About button', () => {
         const {container} = renderWithIntl(getComponent());
         const button = container.querySelector('button[aria-label="About menu"]');

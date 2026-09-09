@@ -27,6 +27,7 @@ import FileMenu from './file-menu.jsx';
 import EditMenu from './edit-menu.jsx';
 import ModeMenu from './mode-menu.jsx';
 import AboutMenu from './about-menu.jsx';
+import ActividadesMenu from './actividades-menu.jsx';
 
 import {openTipsLibrary, openDebugModal} from '../../reducers/modals';
 import {setPlayer} from '../../reducers/mode';
@@ -371,6 +372,13 @@ class MenuBar extends React.Component {
                             restoreOptionMessage={this.restoreOptionMessage}
                             depth={1}
                         />
+                        {this.props.onClickActividad && (
+                            <ActividadesMenu
+                                onClick={this.props.onClickActividad}
+                                isRtl={this.props.isRtl}
+                                depth={1}
+                            />
+                        )}
                         {this.props.isTotallyNormal && (<ModeMenu
                             onSetMode={this.handleSetMode}
                             modeNow={this.props.modeNow}
@@ -687,6 +695,12 @@ MenuBar.propTypes = {
             })
         )
     ]),
+    onClickActividad: PropTypes.arrayOf(
+        PropTypes.shape({
+            title: PropTypes.string,
+            onClick: PropTypes.func
+        })
+    ),
     onClickLogin: PropTypes.func,
     onClickLogo: PropTypes.func,
     onClickMode: PropTypes.func,

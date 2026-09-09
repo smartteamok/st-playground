@@ -13,15 +13,28 @@ import {
     closeLoadingProject
 } from '@scratch/scratch-gui';
 
+import {
+    fetchActividadBytes,
+    fetchCatalog,
+    findActividad,
+    isValidActividadId,
+    menuTitle,
+    parseActividadId
+} from '../../../scratch-gui/src/lib/st-playground-actividad.js';
+
 const desktopApi = () => (typeof window !== 'undefined' ? window.desktop : null);
+
+const isShowingProject = loadingState => (
+    loadingState === 'SHOWING_WITH_ID' || loadingState === 'SHOWING_WITHOUT_ID'
+);
 
 /**
  * Desktop host for scratch-gui.
  *
- * Lives entirely in this package (D-05): no changes to scratch-gui. Platform
- * DESKTOP is what turns on the six offline extensions from D-19. Saving is the
- * native dialog in the main process via session.will-download, so canSave stays
- * false and the GUI just emits a blob download as it does on the web.
+ * Platform DESKTOP turns on the six offline extensions from D-19. Saving is
+ * the native dialog in the main process via session.will-download, so canSave
+ * stays false. Classroom starters (D-21) load through the shared actividad
+ * helper and the Actividades menu passed as a prop (D-05).
  * @param {object} WrappedComponent - GUI-like component to wrap.
  * @returns {object} - the wrapped component.
  */
@@ -29,32 +42,74 @@ const DesktopGUIHOC = function (WrappedComponent) {
     class DesktopGUI extends React.Component {
         constructor (props) {
             super(props);
-            this.state = {projectTitle: undefined};
+            this.state = {projectTitle: undefined, actividadMenu: []};
             this.handleSetTitleFromSave = this.handleSetTitleFromSave.bind(this);
             this.handleUpdateProjectTitle = this.handleUpdateProjectTitle.bind(this);
             this.handleClickAbout = this.handleClickAbout.bind(this);
+            this.handleSelectActividad = this.handleSelectActividad.bind(this);
+            this.flushQueuedActividad = this.flushQueuedActividad.bind(this);
             this.loadProjectBuffer = this.loadProjectBuffer.bind(this);
             this.loadIncomingProject = this.loadIncomingProject.bind(this);
+            this.loadActividadById = this.loadActividadById.bind(this);
+            this.failLoad = this.failLoad.bind(this);
+
+            this.loadGeneration = 0;
+            this.loadChain = Promise.resolve();
+            this.queuedActividadId = null;
+
+            this.catalogPromise = fetchCatalog().then(catalog => {
+                this.setState({
+                    actividadMenu: catalog.map(entry => ({
+                        title: menuTitle(entry),
+                        onClick: () => this.handleSelectActividad(entry.id)
+                    }))
+                });
+                return catalog;
+            }).catch(() => []);
 
             this.props.onLoadingStarted();
             const api = desktopApi();
             const initialPromise = api && api.getInitialProjectData ?
                 api.getInitialProjectData() :
                 Promise.resolve(null);
+            const actividadId = parseActividadId(
+                typeof window !== 'undefined' ? window.location.search : ''
+            );
 
             initialPromise.then(initialProjectData => {
                 const bytes = initialProjectData && (initialProjectData.byteLength || initialProjectData.length);
                 const hasInitialProject = Boolean(bytes);
-                this.props.onHasInitialProject(hasInitialProject, this.props.loadingState);
-                if (!hasInitialProject) {
-                    this.props.onLoadingCompleted();
-                    return;
+                if (hasInitialProject) {
+                    this.props.onHasInitialProject(true, this.props.loadingState);
+                    return this.beginExclusiveLoad(generation =>
+                        this.loadProjectBuffer(initialProjectData, generation));
                 }
-                return this.loadProjectBuffer(initialProjectData);
+                if (actividadId) {
+                    this.props.onHasInitialProject(true, this.props.loadingState);
+                    return this.beginExclusiveLoad(generation =>
+                        this.loadActividadById(actividadId, generation));
+                }
+                this.props.onHasInitialProject(false, this.props.loadingState);
+                this.props.onLoadingCompleted();
             }).catch(error => {
                 this.props.onLoadingCompleted();
                 this.failLoad(error);
             });
+        }
+
+        componentDidUpdate () {
+            if (this.queuedActividadId && isShowingProject(this.props.loadingState)) {
+                this.flushQueuedActividad();
+            }
+        }
+
+        beginExclusiveLoad (work) {
+            const generation = ++this.loadGeneration;
+            this.loadChain = this.loadChain.catch(() => {}).then(() => {
+                if (generation !== this.loadGeneration) return;
+                return work(generation);
+            });
+            return this.loadChain;
         }
 
         componentDidMount () {
@@ -63,11 +118,29 @@ const DesktopGUIHOC = function (WrappedComponent) {
             if (!api) return;
             if (api.onSetTitleFromSave) api.onSetTitleFromSave(this.handleSetTitleFromSave);
             if (api.onOpenProject) api.onOpenProject(this.loadIncomingProject);
+            if (api.onOpenActividad) api.onOpenActividad(this.handleSelectActividad);
         }
 
         handleClickAbout () {
             const api = desktopApi();
             if (api && api.openAbout) api.openAbout();
+        }
+
+        handleSelectActividad (id) {
+            this.queuedActividadId = id;
+            this.props.onLoadingStarted();
+            if (isShowingProject(this.props.loadingState)) {
+                return this.flushQueuedActividad();
+            }
+            return Promise.resolve();
+        }
+
+        flushQueuedActividad () {
+            const id = this.queuedActividadId;
+            if (!id) return Promise.resolve();
+            this.queuedActividadId = null;
+            this.props.onHasInitialProject(true, this.props.loadingState);
+            return this.beginExclusiveLoad(generation => this.loadActividadById(id, generation));
         }
 
         handleSetTitleFromSave (args) {
@@ -79,6 +152,8 @@ const DesktopGUIHOC = function (WrappedComponent) {
         }
 
         failLoad (error) {
+            this.loadGeneration += 1;
+            console.error('st-playground load failed', error);
             const api = desktopApi();
             const detail = error && error.message ? error.message : String(error || '');
             const shown = api && api.showLoadError ? api.showLoadError(detail) : Promise.resolve();
@@ -88,13 +163,16 @@ const DesktopGUIHOC = function (WrappedComponent) {
             });
         }
 
-        loadProjectBuffer (projectData) {
+        loadProjectBuffer (projectData, generation) {
+            const gen = generation || this.loadGeneration;
             return this.props.vm.loadProject(projectData).then(
                 () => {
+                    if (gen !== this.loadGeneration) return;
                     this.props.onLoadingCompleted();
                     this.props.onLoadedProject(this.props.loadingState, true);
                 },
                 error => {
+                    if (gen !== this.loadGeneration) return;
                     this.props.onLoadingCompleted();
                     this.props.onLoadedProject(this.props.loadingState, false);
                     return this.failLoad(error);
@@ -104,8 +182,30 @@ const DesktopGUIHOC = function (WrappedComponent) {
 
         loadIncomingProject (projectData) {
             this.props.onLoadingStarted();
-            this.props.onHasInitialProject(true, this.props.loadingState);
-            return this.loadProjectBuffer(projectData);
+            if (!isShowingProject(this.props.loadingState)) {
+                this.props.onHasInitialProject(true, this.props.loadingState);
+            }
+            return this.beginExclusiveLoad(generation =>
+                this.loadProjectBuffer(projectData, generation));
+        }
+
+        loadActividadById (id, generation) {
+            const gen = generation || this.loadGeneration;
+            return this.catalogPromise.then(catalog => {
+                if (gen !== this.loadGeneration) return;
+                const entry = isValidActividadId(id) ? findActividad(catalog, id) : null;
+                if (!entry) {
+                    throw new Error(`actividad desconocida: ${id}`);
+                }
+                this.handleUpdateProjectTitle(entry.titulo);
+                return fetchActividadBytes(entry).then(buffer => {
+                    if (gen !== this.loadGeneration) return;
+                    return this.loadProjectBuffer(buffer, gen);
+                });
+            }).catch(error => {
+                if (gen !== this.loadGeneration) return;
+                return this.failLoad(error);
+            });
         }
 
         render () {
@@ -134,6 +234,8 @@ const DesktopGUIHOC = function (WrappedComponent) {
                     projectTitle={this.state.projectTitle}
                     showTutorials={false}
                     onClickAbout={this.handleClickAbout}
+                    onClickActividad={this.state.actividadMenu.length ?
+                        this.state.actividadMenu : undefined}
                     onUpdateProjectTitle={this.handleUpdateProjectTitle}
                 />
             );
@@ -165,8 +267,11 @@ const DesktopGUIHOC = function (WrappedComponent) {
             return dispatch(setProjectId(defaultProjectId));
         },
         onLoadedProject: (loadingState, loadSuccess) => {
-            const canSaveToServer = false;
-            return dispatch(onLoadedProject(loadingState, canSaveToServer, loadSuccess));
+            // SBFileUploaderHOC cancels a file-upload state with no File, so
+            // loadingState may already be SHOWING_* when the VM finishes.
+            // onLoadedProject() then returns undefined; dispatching that throws.
+            const action = onLoadedProject(loadingState, false, loadSuccess);
+            if (action) return dispatch(action);
         },
         onRequestNewProject: () => dispatch(requestNewProject(false))
     });

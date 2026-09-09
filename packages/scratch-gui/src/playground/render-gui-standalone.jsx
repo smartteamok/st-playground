@@ -1,5 +1,7 @@
 import {EditorState, createStandaloneRoot, setAppElement} from '../index-standalone';
 import HashParserHOC from '../lib/hash-parser-hoc.jsx';
+import STPlaygroundActividadHOC from '../lib/st-playground-actividad-hoc.jsx';
+import {parseActividadId} from '../lib/st-playground-actividad.js';
 import {PLATFORM} from '../lib/platform.js';
 
 /*
@@ -27,9 +29,14 @@ export default appTarget => {
         window.onbeforeunload = () => true;
     }
 
+    const hasActividad = Boolean(parseActividadId(
+        typeof window !== 'undefined' ? window.location.search : ''
+    ));
     const state = new EditorState({});
     const gui = createStandaloneRoot(state, appTarget, {
-        wrappers: [HashParserHOC]
+        wrappers: hasActividad ?
+            [STPlaygroundActividadHOC] :
+            [HashParserHOC, STPlaygroundActividadHOC]
     });
 
     gui.render({

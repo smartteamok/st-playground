@@ -1,0 +1,15 @@
+.github
+packages/*/dist
+packages/*/build
+packages/st-playground-desktop/release
+packages/st-playground-desktop/dist
+packages/st-playground-desktop/test-results
+packages/*/test
+packages/*/test-results
+packages/scratch-gui/test
+packages/scratch-vm/test
+packages/scratch-render/test
+packages/scratch-paint/test
+packages/scratch-storage/test
+packages/scratch-svg-renderer/test
+**/*.map

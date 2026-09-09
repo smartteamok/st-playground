@@ -1,0 +1,144 @@
+{
+  "actividades": [
+    {
+      "id": "5.1",
+      "libro": 5,
+      "numero": 1,
+      "titulo": "Animación",
+      "archivo": "libro-05/01.sb3"
+    },
+    {
+      "id": "5.2",
+      "libro": 5,
+      "numero": 2,
+      "titulo": "Clima",
+      "archivo": "libro-05/02.sb3"
+    },
+    {
+      "id": "5.3",
+      "libro": 5,
+      "numero": 3,
+      "titulo": "Efectos",
+      "archivo": "libro-05/03.sb3"
+    },
+    {
+      "id": "5.4",
+      "libro": 5,
+      "numero": 4,
+      "titulo": "Morse",
+      "archivo": "libro-05/04.sb3"
+    },
+    {
+      "id": "5.5",
+      "libro": 5,
+      "numero": 5,
+      "titulo": "Reloj",
+      "archivo": "libro-05/05.sb3"
+    },
+    {
+      "id": "6.1",
+      "libro": 6,
+      "numero": 1,
+      "titulo": "Ballet",
+      "archivo": "libro-06/01.sb3"
+    },
+    {
+      "id": "6.2",
+      "libro": 6,
+      "numero": 2,
+      "titulo": "Jardín vertical",
+      "archivo": "libro-06/02.sb3"
+    },
+    {
+      "id": "6.3",
+      "libro": 6,
+      "numero": 3,
+      "titulo": "Origami",
+      "archivo": "libro-06/03.sb3"
+    },
+    {
+      "id": "6.4",
+      "libro": 6,
+      "numero": 4,
+      "titulo": "Prueba de color",
+      "archivo": "libro-06/04.sb3"
+    },
+    {
+      "id": "6.5",
+      "libro": 6,
+      "numero": 5,
+      "titulo": "Semáforo",
+      "archivo": "libro-06/05.sb3"
+    },
+    {
+      "id": "7.1",
+      "libro": 7,
+      "numero": 1,
+      "titulo": "Ciclovías dinámicas",
+      "archivo": "libro-07/01.sb3"
+    },
+    {
+      "id": "7.2",
+      "libro": 7,
+      "numero": 2,
+      "titulo": "Huella ecológica",
+      "archivo": "libro-07/02.sb3"
+    },
+    {
+      "id": "7.3",
+      "libro": 7,
+      "numero": 3,
+      "titulo": "Iluminación inteligente",
+      "archivo": "libro-07/03.sb3"
+    },
+    {
+      "id": "7.4",
+      "libro": 7,
+      "numero": 4,
+      "titulo": "Separación de residuos",
+      "archivo": "libro-07/04.sb3"
+    },
+    {
+      "id": "7.5",
+      "libro": 7,
+      "numero": 5,
+      "titulo": "Vehículos autónomos",
+      "archivo": "libro-07/05.sb3"
+    },
+    {
+      "id": "8.1",
+      "libro": 8,
+      "numero": 1,
+      "titulo": "Ambientación",
+      "archivo": "libro-08/01.sb3"
+    },
+    {
+      "id": "8.2",
+      "libro": 8,
+      "numero": 2,
+      "titulo": "Áreas verdes",
+      "archivo": "libro-08/02.sb3"
+    },
+    {
+      "id": "8.3",
+      "libro": 8,
+      "numero": 3,
+      "titulo": "Búsqueda del tesoro",
+      "archivo": "libro-08/03.sb3"
+    },
+    {
+      "id": "8.4",
+      "libro": 8,
+      "numero": 4,
+      "titulo": "Museo accesible",
+      "archivo": "libro-08/04.sb3"
+    },
+    {
+      "id": "8.5",
+      "libro": 8,
+      "numero": 5,
+      "titulo": "Sistema de seguridad",
+      "archivo": "libro-08/05.sb3"
+    }
+  ]
+}

@@ -9,6 +9,7 @@
  */
 
 import {spawnSync} from 'child_process';
+import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -29,10 +30,16 @@ const failures = [];
 const fail = message => failures.push(message);
 
 const electronBinary = () => {
-    const candidate = path.join(repoRoot, 'node_modules/electron/dist/electron');
-    if (fs.existsSync(candidate)) return candidate;
-    const nested = path.join(desktopRoot, 'node_modules/electron/dist/electron');
-    if (fs.existsSync(nested)) return nested;
+    const dist = path.join(repoRoot, 'node_modules/electron/dist');
+    const nestedDist = path.join(desktopRoot, 'node_modules/electron/dist');
+    const candidates = [
+        path.join(dist, 'electron'),
+        path.join(dist, 'Electron.app/Contents/MacOS/Electron'),
+        path.join(nestedDist, 'electron'),
+        path.join(nestedDist, 'Electron.app/Contents/MacOS/Electron')
+    ];
+    const found = candidates.find(candidate => fs.existsSync(candidate));
+    if (found) return found;
     throw new Error('no se encontró el binario de Electron; corre npm install');
 };
 
@@ -115,35 +122,48 @@ const dismissWebGlModal = async page => {
 
 const launchWithEnv = async (extraArgs, extraEnv) => {
     const {executablePath, args} = defaultLaunch();
+    const linuxGpuArgs = process.platform === 'linux' ? [
+        '--no-sandbox',
+        '--enable-unsafe-swiftshader',
+        '--ignore-gpu-blocklist',
+        '--use-gl=angle',
+        '--use-angle=swiftshader'
+    ] : [];
+    const linuxEnv = process.platform === 'linux' ? {
+        DISPLAY: process.env.DISPLAY || ':1',
+        ST_PLAYGROUND_SWIFTSHADER: '1',
+        ST_PLAYGROUND_NO_SANDBOX: '1'
+    } : {};
+    const env = {
+        ...process.env,
+        ...linuxEnv,
+        ST_PLAYGROUND_CONFIRM_LEAVE: 'leave',
+        ST_PLAYGROUND_ALLOW_MULTI: '1',
+        LANG: 'en_US.UTF-8',
+        LANGUAGE: 'en',
+        ...extraEnv
+    };
+    delete env.ELECTRON_RUN_AS_NODE;
     const app = await electron.launch({
         executablePath,
         args: [
             ...args,
-            '--no-sandbox',
-            '--enable-unsafe-swiftshader',
-            '--ignore-gpu-blocklist',
-            '--use-gl=angle',
-            '--use-angle=swiftshader',
+            ...linuxGpuArgs,
             '--lang=en-US',
             ...extraArgs
         ],
-        env: {
-            ...process.env,
-            DISPLAY: process.env.DISPLAY || ':1',
-            ST_PLAYGROUND_SWIFTSHADER: '1',
-            ST_PLAYGROUND_NO_SANDBOX: '1',
-            ST_PLAYGROUND_CONFIRM_LEAVE: 'leave',
-            ST_PLAYGROUND_ALLOW_MULTI: '1',
-            LANG: 'en_US.UTF-8',
-            LANGUAGE: 'en',
-            ...extraEnv
-        }
+        env
     });
     const page = await app.firstWindow();
     const blocked = [];
     const localRequests = [];
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(error.message));
+    page.on('console', msg => {
+        if (msg.type() === 'error' && /st-playground load failed/.test(msg.text())) {
+            pageErrors.push(msg.text());
+        }
+    });
     page.on('dialog', dialog => dialog.accept().catch(() => {}));
     page.on('request', request => {
         const url = request.url();
@@ -178,6 +198,70 @@ const closeApp = async session => {
 const waitForEditor = async page => {
     await page.locator('button[aria-label="Choose a Sprite"]').first().waitFor({timeout: 90000});
     await dismissWebGlModal(page);
+    await page.locator('[class*="loader_background"]').first()
+        .waitFor({state: 'hidden', timeout: 90000})
+        .catch(() => {});
+};
+
+const hashFile = filePath => crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+
+const catalog = JSON.parse(
+    fs.readFileSync(path.join(repoRoot, 'actividades/catalogo.json'), 'utf8')
+).actividades;
+const actividadById = id => catalog.find(item => item.id === id);
+const menuLabel = entry => `${entry.id} · ${entry.titulo}`;
+
+const checkActividadesMenu = async page => {
+    const starterPath = path.join(repoRoot, 'actividades/libro-05/01.sb3');
+    const hashBefore = hashFile(starterPath);
+    const first = actividadById('5.1');
+
+    const menuButton = page.getByLabel('Actividades');
+    await menuButton.waitFor({timeout: 20000});
+    await menuButton.click();
+    const firstItem = page.getByText(menuLabel(first), {exact: true});
+    await firstItem.waitFor({timeout: 10000});
+    const count = await page.getByText(/^[5-8]\.[1-5] · /).count();
+    console.log(`  menú Actividades: ${count} entradas`);
+    if (count !== 20) fail(`se esperaban 20 actividades en el menú, hay ${count}`);
+    await firstItem.click();
+
+    await page.locator('[class*="loader_background"]').first()
+        .waitFor({state: 'hidden', timeout: 90000})
+        .catch(() => {});
+
+    try {
+        await page.waitForFunction(expected => {
+            const input = document.querySelector('input[class*="project-title"]');
+            return input && input.value === expected;
+        }, first.titulo, {timeout: 30000});
+    } catch {
+        fail(`al cargar 5.1 el título no pasó a ${first.titulo}`);
+    }
+    const title = await page.locator('input[class*="project-title"]').first().inputValue().catch(() => '');
+    console.log(`  actividad 5.1 título: ${JSON.stringify(title)}`);
+    await page.getByText('Objeto1', {exact: true}).waitFor({timeout: 20000});
+    await page.locator('[class*="sprite-selector-item"]').first().waitFor({timeout: 20000});
+    const sprites = await page.locator('[class*="sprite-selector-item"]').count();
+    console.log(`  sprites en el escenario: ${sprites}`);
+    if (sprites < 1) fail('al cargar 5.1 no hay sprites en el escenario');
+    if (title === 'ST-Playground Project') fail('5.1 quedó con el título del proyecto por defecto');
+
+    await page.waitForTimeout(1500);
+    const titleAfter = await page.locator('input[class*="project-title"]').first().inputValue().catch(() => '');
+    if (titleAfter !== first.titulo) {
+        fail(`5.1 no se mantuvo: título pasó a ${JSON.stringify(titleAfter)}`);
+    }
+    if (!(await page.getByText('Objeto1', {exact: true}).count())) {
+        fail('5.1 no se mantuvo: falta el sprite Objeto1');
+    }
+
+    const hashAfter = hashFile(starterPath);
+    if (hashBefore !== hashAfter) {
+        fail('guardar/cargar mutó actividades/libro-05/01.sb3');
+    } else {
+        console.log('  arranque embebido intacto');
+    }
 };
 
 const checkLibraries = async (page, localRequests) => {
@@ -269,6 +353,8 @@ const outDir = path.join(desktopRoot, 'test-results');
 fs.mkdirSync(outDir, {recursive: true});
 const screenshotPath = path.join(outDir, 'desktop.png');
 const savePath = path.join(os.tmpdir(), 'st-playground-check.sb3');
+const starterPath = path.join(repoRoot, 'actividades/libro-05/01.sb3');
+const starterHash = hashFile(starterPath);
 
 console.log('== escritorio');
 const session = await launchWithEnv([], {ST_PLAYGROUND_SAVE_PATH: savePath});
@@ -277,7 +363,14 @@ const {app, page, blocked, localRequests, pageErrors} = session;
 try {
     await waitForEditor(page);
     console.log('  baseURI:', await page.evaluate(() => document.baseURI));
+    await checkActividadesMenu(page);
     await checkLibraries(page, localRequests);
+    const titleAfterLibraries = await page.locator('input[class*="project-title"]').first()
+        .inputValue()
+        .catch(() => '');
+    if (titleAfterLibraries !== 'Animación') {
+        fail(`después de las bibliotecas el título no es Animación: ${JSON.stringify(titleAfterLibraries)}`);
+    }
 
     if (blocked.length) {
         fail(`${blocked.length} request(s) a la red: ${[...new Set(blocked)].slice(0, 5).join(', ')}`);
@@ -292,6 +385,9 @@ try {
     const saved = await saveProject(page, savePath);
     if (saved && !sb3HasProjectJson(savePath)) {
         fail('el .sb3 no contiene project.json');
+    }
+    if (hashFile(starterPath) !== starterHash) {
+        fail('guardar mutó actividades/libro-05/01.sb3');
     }
 } finally {
     await closeApp(session);
@@ -318,6 +414,27 @@ if (fs.existsSync(savePath) && sb3HasProjectJson(savePath)) {
     } finally {
         await closeApp(reopen);
     }
+}
+
+await new Promise(resolve => setTimeout(resolve, 1000));
+
+console.log('\n== abrir ?actividad=8.5');
+const byQuery = await launchWithEnv(['st-playground://actividad/8.5'], {});
+try {
+    await waitForEditor(byQuery.page);
+    const title = await byQuery.page.locator('input[class*="project-title"]').first()
+        .inputValue()
+        .catch(() => '');
+    console.log(`  título: ${JSON.stringify(title)}`);
+    if (title !== actividadById('8.5').titulo) {
+        fail(`protocolo 8.5: título inesperado ${JSON.stringify(title)}`);
+    }
+    if (byQuery.blocked.length) {
+        fail(`${byQuery.blocked.length} request(s) a la red al abrir actividad: ${[...new Set(byQuery.blocked)].slice(0, 5).join(', ')}`);
+    }
+    await byQuery.page.screenshot({path: path.join(outDir, 'desktop-actividad.png')});
+} finally {
+    await closeApp(byQuery);
 }
 
 if (failures.length) {

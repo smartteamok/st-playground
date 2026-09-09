@@ -8,6 +8,7 @@ const isDevServer = process.argv.some(arg => arg === 'serve' || arg.includes('we
 const guiDist = path.resolve(__dirname, '../scratch-gui/dist');
 const guiStatic = path.resolve(__dirname, '../scratch-gui/static');
 const libraryAssets = path.resolve(__dirname, '../../assets/library');
+const actividadesDir = path.resolve(__dirname, '../../actividades');
 
 const copyPatterns = [
     {
@@ -45,6 +46,13 @@ const copyPatterns = [
     {
         from: path.resolve(__dirname, '../../CREDITS.md'),
         to: 'CREDITS.md'
+    },
+    {
+        from: actividadesDir,
+        to: 'actividades',
+        globOptions: {
+            ignore: ['**/README.md']
+        }
     }
 ];
 
@@ -82,7 +90,10 @@ module.exports = {
         rules: [
             {
                 test: /\.jsx?$/,
-                include: path.resolve(__dirname, 'src/renderer'),
+                include: [
+                    path.resolve(__dirname, 'src/renderer'),
+                    path.resolve(__dirname, '../scratch-gui/src/lib/st-playground-actividad.js')
+                ],
                 use: {
                     loader: 'babel-loader',
                     options: {
@@ -125,6 +136,11 @@ module.exports = {
             {
                 directory: libraryAssets,
                 publicPath: '/static/library-assets',
+                watch: false
+            },
+            {
+                directory: actividadesDir,
+                publicPath: '/actividades',
                 watch: false
             }
         ],

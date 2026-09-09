@@ -20,6 +20,8 @@ como remote `upstream`; las actualizaciones entran por merge de tags.
   todavía están abiertas y qué fase bloquean.
 - [`CREDITS.md`](./CREDITS.md): licencias y atribución de la biblioteca de
   medios y de los assets propios.
+- [`docs/despliegue-web.md`](./docs/despliegue-web.md): sitio estático en
+  Vercel y dominio `st-playground.smartteamdigital.com`.
 
 ## Estado
 
@@ -30,7 +32,7 @@ como remote `upstream`; las actualizaciones entran por merge de tags.
 | 2 | Rebranding y limpieza | completada |
 | 3 | Biblioteca de medios propia y offline | completada |
 | 4 | Desktop offline | completada |
-| 5 | Actividades de aula (20 `.sb3` + links) | siguiente |
+| 5 | Actividades de aula (20 `.sb3` + links) | completada |
 | 6 | Web + LTI 1.3 | condicional a la validación en aula |
 
 ## Requisitos
@@ -72,7 +74,8 @@ Con el playground en marcha:
 ```bash
 node scripts/check-branding.mjs        # sin marca ajena ni analytics
 node scripts/check-offline.mjs         # el editor no pide nada a la red
-node scripts/check-desktop.mjs         # app Electron: bibliotecas, guardar, reabrir
+node scripts/check-actividades.mjs     # 20 arranques 5.1–8.5 con project.json
+node scripts/check-desktop.mjs         # app Electron: bibliotecas, actividades, guardar, reabrir
 ```
 
 ## Biblioteca de medios
@@ -116,6 +119,20 @@ Tiempos medidos en la fase 1 (4 CPUs, 15 GB RAM, Node 24.20.0):
 | primer `npm start` hasta "compiled successfully" | ~11s |
 | `test:unit` de `scratch-gui` | 15s |
 | `build:dist` de `scratch-gui` | 29s |
+
+## Sitio web (Vercel)
+
+El mismo playground se publica como estático en Vercel (biblioteca +
+actividades adentro del build). El dominio previsto es
+`https://st-playground.smartteamdigital.com`. Los links de Moodle son
+`https://st-playground.smartteamdigital.com/?actividad=5.1`.
+
+```bash
+npm run build:web   # salida en packages/scratch-gui/build/
+```
+
+Pasos de DNS, import del repo y qué no hay que configurar (sin rewrite
+SPA, sin LTI) están en [`docs/despliegue-web.md`](./docs/despliegue-web.md).
 
 ## Convenciones heredadas de upstream
 

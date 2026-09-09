@@ -22,6 +22,11 @@ extraResources:
     to: library-assets
     filter:
       - "**/*"
+  - from: ../../actividades
+    to: actividades
+    filter:
+      - "**/*"
+      - "!README.md"
 extraMetadata:
   main: dist/main/main.js
 publish: []
@@ -31,6 +36,10 @@ fileAssociations:
     description: Proyecto de ST-Playground
     mimeType: application/x.scratch.sb3
     role: Editor
+protocols:
+  - name: ST-Playground
+    schemes:
+      - st-playground
 win:
   icon: buildResources/icon.ico
   signExecutable: false

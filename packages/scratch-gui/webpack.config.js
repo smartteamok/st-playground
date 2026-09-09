@@ -152,17 +152,30 @@ const distStandaloneConfig = baseConfig.clone()
         }
     });
 
+// Relative publicPath so the same build works on localhost, *.vercel.app,
+// and the production host (st-playground.smartteamdigital.com).
+const isWebDeploy = process.env.ST_PLAYGROUND_WEB === '1';
+const playgroundEntries = {
+    gui: './src/playground/index.jsx'
+};
+if (!isWebDeploy) {
+    playgroundEntries.guistandalone = './src/playground/standalone.jsx';
+    playgroundEntries.blocksonly = './src/playground/blocks-only.jsx';
+    playgroundEntries.compatibilitytesting = './src/playground/compatibility-testing.jsx';
+    playgroundEntries.player = './src/playground/player.jsx';
+}
+
+const addPlaygroundPage = (config, options) => config.addPlugin(new HtmlWebpackPlugin({
+    ...commonHtmlWebpackPluginOptions,
+    template: 'src/playground/index.ejs',
+    ...options
+}));
+
 // build the examples and debugging tools in `build/`
-const buildConfig = baseConfig.clone()
+let buildConfig = baseConfig.clone()
     .enableDevServer(process.env.PORT || 8601)
     .merge({
-        entry: {
-            gui: './src/playground/index.jsx',
-            guistandalone: './src/playground/standalone.jsx',
-            blocksonly: './src/playground/blocks-only.jsx',
-            compatibilitytesting: './src/playground/compatibility-testing.jsx',
-            player: './src/playground/player.jsx'
-        },
+        entry: playgroundEntries,
         output: {
             path: path.resolve(__dirname, 'build'),
 
@@ -172,42 +185,34 @@ const buildConfig = baseConfig.clone()
             // Hence, we're resetting the public path to be relative.
             publicPath: ''
         }
-    })
-    .addPlugin(new HtmlWebpackPlugin({
-        ...commonHtmlWebpackPluginOptions,
-        chunks: ['gui'],
-        template: 'src/playground/index.ejs',
-        title: 'ST-Playground'
-    }))
-    .addPlugin(new HtmlWebpackPlugin({
-        ...commonHtmlWebpackPluginOptions,
+    });
+buildConfig = addPlaygroundPage(buildConfig, {
+    chunks: ['gui'],
+    title: 'ST-Playground'
+});
+if (!isWebDeploy) {
+    buildConfig = addPlaygroundPage(buildConfig, {
         chunks: ['guistandalone'],
         filename: 'standalone.html',
-        template: 'src/playground/index.ejs',
         title: 'ST-Playground: Standalone Mode'
-    }))
-    .addPlugin(new HtmlWebpackPlugin({
-        ...commonHtmlWebpackPluginOptions,
+    });
+    buildConfig = addPlaygroundPage(buildConfig, {
         chunks: ['blocksonly'],
         filename: 'blocks-only.html',
-        template: 'src/playground/index.ejs',
         title: 'ST-Playground: Blocks Only Example'
-    }))
-    .addPlugin(new HtmlWebpackPlugin({
-        ...commonHtmlWebpackPluginOptions,
+    });
+    buildConfig = addPlaygroundPage(buildConfig, {
         chunks: ['compatibilitytesting'],
         filename: 'compatibility-testing.html',
-        template: 'src/playground/index.ejs',
         title: 'ST-Playground: Compatibility Testing'
-    }))
-    .addPlugin(new HtmlWebpackPlugin({
-        ...commonHtmlWebpackPluginOptions,
+    });
+    buildConfig = addPlaygroundPage(buildConfig, {
         chunks: ['player'],
         filename: 'player.html',
-        template: 'src/playground/index.ejs',
         title: 'ST-Playground: Player Example'
-    }))
-    .addPlugin(new CopyWebpackPlugin({
+    });
+}
+buildConfig = buildConfig.addPlugin(new CopyWebpackPlugin({
         patterns: [
             {
                 from: 'static',
@@ -220,6 +225,11 @@ const buildConfig = baseConfig.clone()
                 // application copies the library itself.
                 from: '../../assets/library',
                 to: 'static/library-assets',
+                noErrorOnMissing: true
+            },
+            {
+                from: '../../actividades',
+                to: 'actividades',
                 noErrorOnMissing: true
             },
             {

@@ -38,6 +38,49 @@ Hasta que exista la integración LTI, la entrega es una **Tarea con archivo**.
    proyecto típico pesa mucho menos.
 6. Guardar.
 
+## Proyectos de arranque de los libros
+
+Hay 20 consignas listas, una por proyecto de los libros 5 a 8. Un link abre
+el editor **con ese proyecto ya cargado**. En Moodle: Recurso → URL, o un
+hipervínculo en la consigna de la Tarea. El alumno trabaja y entrega su
+copia por la Tarea de archivo (arriba).
+
+En la web (`https://st-playground.smartteamdigital.com`; hasta que el
+DNS apunte, la URL `*.vercel.app` del proyecto):
+
+| Id | Título | Link |
+|---|---|---|
+| 5.1 | Animación | `https://st-playground.smartteamdigital.com/?actividad=5.1` |
+| 5.2 | Clima | `https://st-playground.smartteamdigital.com/?actividad=5.2` |
+| 5.3 | Efectos | `https://st-playground.smartteamdigital.com/?actividad=5.3` |
+| 5.4 | Morse | `https://st-playground.smartteamdigital.com/?actividad=5.4` |
+| 5.5 | Reloj | `https://st-playground.smartteamdigital.com/?actividad=5.5` |
+| 6.1 | Ballet | `https://st-playground.smartteamdigital.com/?actividad=6.1` |
+| 6.2 | Jardín vertical | `https://st-playground.smartteamdigital.com/?actividad=6.2` |
+| 6.3 | Origami | `https://st-playground.smartteamdigital.com/?actividad=6.3` |
+| 6.4 | Prueba de color | `https://st-playground.smartteamdigital.com/?actividad=6.4` |
+| 6.5 | Semáforo | `https://st-playground.smartteamdigital.com/?actividad=6.5` |
+| 7.1 | Ciclovías dinámicas | `https://st-playground.smartteamdigital.com/?actividad=7.1` |
+| 7.2 | Huella ecológica | `https://st-playground.smartteamdigital.com/?actividad=7.2` |
+| 7.3 | Iluminación inteligente | `https://st-playground.smartteamdigital.com/?actividad=7.3` |
+| 7.4 | Separación de residuos | `https://st-playground.smartteamdigital.com/?actividad=7.4` |
+| 7.5 | Vehículos autónomos | `https://st-playground.smartteamdigital.com/?actividad=7.5` |
+| 8.1 | Ambientación | `https://st-playground.smartteamdigital.com/?actividad=8.1` |
+| 8.2 | Áreas verdes | `https://st-playground.smartteamdigital.com/?actividad=8.2` |
+| 8.3 | Búsqueda del tesoro | `https://st-playground.smartteamdigital.com/?actividad=8.3` |
+| 8.4 | Museo accesible | `https://st-playground.smartteamdigital.com/?actividad=8.4` |
+| 8.5 | Sistema de seguridad | `https://st-playground.smartteamdigital.com/?actividad=8.5` |
+
+En red local sin Internet, reemplazá el origen por
+`http://<ip>:8601` (mismo `?actividad=`).
+
+Sin red, en la app de escritorio: menú **Actividades** (las mismas 20
+entradas). Un link `st-playground://actividad/5.1` abre la app instalada
+con ese arranque; el ZIP portable no registra el protocolo, ahí vale el
+menú.
+
+Guardar produce un `.sb3` nuevo. El arranque del repo no se pisa.
+
 ### Proyecto de arranque (opcional)
 
 Si querés que todos partan del mismo escenario o de los mismos sprites:

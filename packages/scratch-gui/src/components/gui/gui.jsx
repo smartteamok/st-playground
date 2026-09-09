@@ -165,6 +165,7 @@ const GUIComponent = props => {
         menuBarHidden,
         renderLogin,
         onClickAbout,
+        onClickActividad,
         onLogOut,
         onClickLogin,
         onOpenRegistration,
@@ -361,6 +362,7 @@ const GUIComponent = props => {
                             showComingSoon={showComingSoon}
                             showTutorials={showTutorials}
                             onClickAbout={onClickAbout}
+                            onClickActividad={onClickActividad}
                             onClickLogo={onClickLogo}
                             onLogOut={onLogOut}
                             onClickLogin={onClickLogin}
@@ -630,6 +632,12 @@ GUIComponent.propTypes = {
     onActivateCostumesTab: PropTypes.func,
     onActivateSoundsTab: PropTypes.func,
     onActivateTab: PropTypes.func,
+    onClickActividad: PropTypes.arrayOf(
+        PropTypes.shape({
+            title: PropTypes.string,
+            onClick: PropTypes.func
+        })
+    ),
     onClickLogo: PropTypes.func,
     onExtensionButtonClick: PropTypes.func,
     onLogOut: PropTypes.func,

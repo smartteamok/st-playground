@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld('desktop', {
     onOpenProject: callback => {
         ipcRenderer.on('open-project-data', (_event, data) => callback(data));
     },
+    onOpenActividad: callback => {
+        ipcRenderer.on('open-actividad', (_event, id) => callback(id));
+    },
     openAbout: () => ipcRenderer.send('open-about-window'),
     showLoadError: detail => ipcRenderer.invoke('show-load-error', detail)
 });

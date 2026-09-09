@@ -31,7 +31,7 @@ Fase 1  Upstream y build verde      el repo pasa a ser el fork       completa
 Fase 2  Rebranding y limpieza       packages/scratch-gui             completa
 Fase 3  Biblioteca propia y offline  packages/scratch-gui + assets/    completa
 Fase 4  Desktop offline             packages/st-playground-desktop   completa
-Fase 5  Actividades de aula         actividades/ + links             siguiente
+Fase 5  Actividades de aula         actividades/ + links             completa
 ------- validar en aula -------
 Fase 6  Web + LTI 1.3 + guardado    packages/st-playground-web       condicional
 ```
@@ -809,6 +809,8 @@ validación: son archivos locales y un query string.
 
 ## Fase 5. Actividades de aula
 
+Estado: **completa**.
+
 ### Objetivo
 
 Los 20 proyectos de arranque de los libros 5 a 8 viven en el repo. Un link
@@ -818,9 +820,7 @@ menú Actividades de la app de escritorio.
 
 ### Prerrequisitos
 
-Fase 4 completa. Los 20 `.sb3` los aporta el equipo docente; hasta que
-lleguen se puede desarrollar el cargador con un `.sb3` de prueba generado
-en ST-Playground.
+Fase 4 completa. Los 20 `.sb3` viven en `actividades/` (libros 5 a 8).
 
 ### Convención (D-21)
 
@@ -871,12 +871,15 @@ prop o efecto al lado de las props de la fase 2. Webpack del playground
 copia `actividades/` a `build/actividades/` (mismo patrón que
 `library-assets`).
 
-Links de ejemplo, con el playground en `http://<ip>:8601/`:
+Links de ejemplo, en producción
+`https://st-playground.smartteamdigital.com` (Vercel; ver
+[`docs/despliegue-web.md`](./docs/despliegue-web.md)) o en red local
+`http://<ip>:8601/`:
 
 ```
-http://<ip>:8601/?actividad=5.1
-http://<ip>:8601/?actividad=6.3
-http://<ip>:8601/?actividad=8.5
+https://st-playground.smartteamdigital.com/?actividad=5.1
+https://st-playground.smartteamdigital.com/?actividad=6.3
+https://st-playground.smartteamdigital.com/?actividad=8.5
 ```
 
 En Moodle: Recurso → URL, o un hipervínculo en la consigna de la Tarea.
@@ -919,18 +922,18 @@ en Moodle, y cómo abrirlos desde el menú si no hay red. Una línea en
 
 ### Criterios de aceptación
 
-- [ ] `actividades/catalogo.json` lista 20 ids `5.1`–`8.5` y cada archivo
+- [x] `actividades/catalogo.json` lista 20 ids `5.1`–`8.5` y cada archivo
       existe y abre como `.sb3`.
-- [ ] `http://127.0.0.1:8601/?actividad=5.1` abre el editor con ese
+- [x] `http://127.0.0.1:8601/?actividad=5.1` abre el editor con ese
       proyecto (título y sprites distintos del proyecto por defecto).
-- [ ] Un id inexistente (`?actividad=9.9`) no rompe el editor: aviso y
+- [x] Un id inexistente (`?actividad=9.9`) no rompe el editor: aviso y
       proyecto por defecto.
-- [ ] En escritorio, el menú Actividades muestra 20 entradas y cargar una
+- [x] En escritorio, el menú Actividades muestra 20 entradas y cargar una
       equivale al link. Cero requests a la red.
-- [ ] Guardar produce un `.sb3` nuevo; el arranque en `actividades/` no
+- [x] Guardar produce un `.sb3` nuevo; el arranque en `actividades/` no
       cambia.
-- [ ] `docs/guia-docente.md` tiene la tabla de links para pegar en Moodle.
-- [ ] `check-actividades.mjs` y `check-desktop.mjs` verdes.
+- [x] `docs/guia-docente.md` tiene la tabla de links para pegar en Moodle.
+- [x] `check-actividades.mjs` y `check-desktop.mjs` verdes.
 
 ### Qué queda afuera de esta fase
 

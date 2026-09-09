@@ -48,6 +48,12 @@ const resolveLibraryRoot = () => {
     return path.join(resolveRendererRoot(), 'static/library-assets');
 };
 
+const resolveActividadesRoot = () => {
+    const extra = path.join(process.resourcesPath, 'actividades');
+    if (fs.existsSync(path.join(extra, 'catalogo.json'))) return extra;
+    return path.join(resolveRendererRoot(), 'actividades');
+};
+
 const resolveAppPath = requestUrl => {
     const {hostname, pathname} = new URL(requestUrl);
     if (hostname !== APP_HOST) return null;
@@ -58,12 +64,20 @@ const resolveAppPath = requestUrl => {
 
     const rendererRoot = resolveRendererRoot();
     const libraryRoot = resolveLibraryRoot();
+    const actividadesRoot = resolveActividadesRoot();
     const libraryPrefix = 'static/library-assets/';
+    const actividadesPrefix = 'actividades/';
 
     if (decoded.startsWith(libraryPrefix)) {
         const rest = decoded.slice(libraryPrefix.length);
         const target = path.join(libraryRoot, rest);
         return isInside(libraryRoot, target) ? target : null;
+    }
+
+    if (decoded.startsWith(actividadesPrefix)) {
+        const rest = decoded.slice(actividadesPrefix.length);
+        const target = path.join(actividadesRoot, rest);
+        return isInside(actividadesRoot, target) ? target : null;
     }
 
     const target = path.join(rendererRoot, decoded);
@@ -89,6 +103,7 @@ module.exports = {
     attachAppProtocolHandler,
     editorUrl,
     registerAppScheme,
+    resolveActividadesRoot,
     resolveLibraryRoot,
     resolveRendererRoot
 };

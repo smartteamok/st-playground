@@ -50,7 +50,9 @@ Cuando no se puede instalar software en la máquina, se copia el ZIP a un
 pendrive, se descomprime y se ejecuta `ST-Playground.exe`. No pide
 administrador. La asociación de `.sb3` no queda registrada en Windows: hay
 que abrir los proyectos desde Archivo → Cargar desde la computadora, o
-arrastrarlos al `.exe`.
+arrastrarlos al `.exe`. El protocolo `st-playground://actividad/5.1` no
+queda registrado en el ZIP: para las consignas de los libros usar el menú
+**Actividades**. El instalador NSIS sí registra ese protocolo.
 
 ## SmartScreen
 
@@ -72,6 +74,13 @@ Las computadoras son compartidas. Cada alumno debería guardar su `.sb3` en:
 "Guardar en tu computadora" pregunta la ruta **cada vez**. No hay
 "guardar encima del archivo anterior" todavía: es el mismo comportamiento
 que la app oficial de Scratch.
+
+## Playground en la web
+
+El editor también se publica en Vercel. El dominio previsto es
+`https://st-playground.smartteamdigital.com` (pasos en
+[`despliegue-web.md`](./despliegue-web.md)). Esa vía necesita red en el
+aula; no reemplaza al instalador Windows para las máquinas sin Internet.
 
 ## Red local, sin instalar nada
 

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const {app, BrowserWindow, Menu, dialog, ipcMain, session, shell} = require('electron');
 
-const {projectPathFromArgv} = require('./argv');
+const {projectPathFromArgv, actividadIdFromArgv} = require('./argv');
 const {
     attachAppProtocolHandler,
     editorUrl,
@@ -22,6 +22,7 @@ const MICROBIT = {vendorId: 0x0d28, productId: 0x0204};
 
 const windows = {};
 let queuedProjectPath = projectPathFromArgv(process.argv);
+let queuedActividadId = queuedProjectPath ? null : actividadIdFromArgv(process.argv);
 
 app.commandLine.appendSwitch('host-resolver-rules', 'MAP device-manager.scratch.mit.edu 127.0.0.1');
 app.commandLine.appendSwitch('enable-unsafe-swiftshader');
@@ -76,6 +77,35 @@ const sendProjectToRenderer = async filePath => {
     const data = await readProjectFile(filePath);
     if (!data || !windows.main) return;
     windows.main.webContents.send('open-project-data', data);
+};
+
+const sendActividadToRenderer = id => {
+    if (!id || !windows.main) return;
+    windows.main.webContents.send('open-actividad', id);
+};
+
+const handleIncomingArgv = argv => {
+    const filePath = projectPathFromArgv(argv);
+    const actividadId = actividadIdFromArgv(argv);
+    if (windows.main) {
+        if (windows.main.isMinimized()) windows.main.restore();
+        windows.main.focus();
+        if (filePath) {
+            sendProjectToRenderer(filePath);
+            return;
+        }
+        if (actividadId) sendActividadToRenderer(actividadId);
+        return;
+    }
+    if (filePath) {
+        queuedProjectPath = filePath;
+        queuedActividadId = null;
+        initialProjectDataPromise = readProjectFile(filePath);
+        return;
+    }
+    if (actividadId) {
+        queuedActividadId = actividadId;
+    }
 };
 
 const handlePermissionRequest = async (webContents, permission, callback, details) => {
@@ -180,8 +210,11 @@ const createAboutWindow = () => {
 };
 
 const createMainWindow = () => {
+    const search = (!queuedProjectPath && queuedActividadId) ?
+        `actividad=${encodeURIComponent(queuedActividadId)}` : '';
     const window = createWindow({
         url: 'index.html',
+        search,
         width: DEFAULT_SIZE.width,
         height: DEFAULT_SIZE.height,
         title: `${packageJson.productName} ${packageJson.version}`
@@ -212,18 +245,18 @@ app.on('window-all-closed', () => {
 });
 
 app.on('second-instance', (_event, argv) => {
-    const filePath = projectPathFromArgv(argv);
-    if (windows.main) {
-        if (windows.main.isMinimized()) windows.main.restore();
-        windows.main.focus();
-        if (filePath) sendProjectToRenderer(filePath);
-    } else if (filePath) {
-        queuedProjectPath = filePath;
-        initialProjectDataPromise = readProjectFile(filePath);
-    }
+    handleIncomingArgv(argv);
+});
+
+app.on('open-url', (event, url) => {
+    event.preventDefault();
+    handleIncomingArgv([url]);
 });
 
 app.whenReady().then(() => {
+    if (app.isPackaged) {
+        app.setAsDefaultProtocolClient('st-playground');
+    }
     if (!isDevServer) {
         attachAppProtocolHandler();
     }
