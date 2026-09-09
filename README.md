@@ -18,6 +18,8 @@ como remote `upstream`; las actualizaciones entran por merge de tags.
   archivos a tocar, comandos y criterios de aceptación.
 - [`DECISIONES.md`](./DECISIONES.md): decisiones de arquitectura, con las que
   todavía están abiertas y qué fase bloquean.
+- [`CREDITS.md`](./CREDITS.md): licencias y atribución de la biblioteca de
+  medios y de los assets propios.
 
 ## Estado
 
@@ -26,7 +28,7 @@ como remote `upstream`; las actualizaciones entran por merge de tags.
 | 0 | Decisiones y toolchain | completada |
 | 1 | Traer upstream y build verde | completada (v15.1.1) |
 | 2 | Rebranding y limpieza | completada |
-| 3 | Assets propios y self-hosting | pendiente |
+| 3 | Biblioteca de medios propia y offline | completada |
 | 4 | Desktop offline | pendiente |
 | 5 | Web + LTI 1.3 | condicional a la validación de la fase 4 |
 
@@ -67,8 +69,24 @@ npm run build:dist     # dist/scratch-gui.js + dist/types/
 Con el playground en marcha:
 
 ```bash
-node scripts/check-branding.mjs
+node scripts/check-branding.mjs        # sin marca ajena ni analytics
+node scripts/check-offline.mjs         # el editor no pide nada a la red
 ```
+
+## Biblioteca de medios
+
+Los 1316 assets de la biblioteca están versionados en `assets/library/` y
+webpack los publica en `static/library-assets/`, de donde los lee
+`STPlaygroundStorage`. El editor no consulta `assets.scratch.mit.edu`.
+
+```bash
+node scripts/fetch-library-assets.mjs --check   # verifica carpeta contra catálogos
+node scripts/fetch-library-assets.mjs           # descarga lo que falte
+node scripts/fetch-library-assets.mjs --prune   # borra lo que ya no se referencia
+```
+
+Después de cada merge de upstream hay que correr el `--check`: si upstream
+agrega entradas a los catálogos, trae las referencias pero no los archivos.
 
 Tiempos medidos en la fase 1 (4 CPUs, 15 GB RAM, Node 24.20.0):
 
