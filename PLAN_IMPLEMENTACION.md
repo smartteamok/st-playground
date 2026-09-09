@@ -102,12 +102,17 @@ git merge --allow-unrelated-histories v15.1.1
 
 ```bash
 npm ci
+for p in task-herder scratch-storage scratch-svg-renderer scratch-paint scratch-render scratch-vm; do
+  NODE_ENV=production npm run build --workspace=packages/$p
+done
 npm start                      # webpack serve, http://localhost:8601
 ```
 
-   `npm start` delega en `npm --workspace @scratch/scratch-gui start`. La
-   primera instalación es larga; anotar el tiempo en el commit de cierre de
-   fase para dimensionar CI.
+   `npm start` delega en `npm --workspace @scratch/scratch-gui start`. Los
+   paquetes del workspace se resuelven por symlink y la GUI importa sus
+   `dist/`, por eso hay que compilarlos antes del primer arranque; sin ese
+   paso webpack falla con `Can't resolve '@scratch/scratch-storage'`.
+   Anotar los tiempos en el README para dimensionar CI.
 
 3. Build de distribución y tests unitarios de la GUI:
 
@@ -131,14 +136,14 @@ cd ../..
 
 ### Criterios de aceptación
 
-- [ ] `git log --oneline | grep -c .` muestra la historia de upstream y
+- [x] `git log --oneline | grep -c .` muestra la historia de upstream y
       `git remote -v` lista `upstream`.
-- [ ] `http://localhost:8601` abre el editor y carga el proyecto por defecto
+- [x] `http://localhost:8601` abre el editor y carga el proyecto por defecto
       (el gato; en esta fase todavía es el de upstream).
-- [ ] `packages/scratch-gui/dist/scratch-gui.js` y
+- [x] `packages/scratch-gui/dist/scratch-gui.js` y
       `packages/scratch-gui/dist/types/index.d.ts` existen.
-- [ ] `npm run test:unit` en `packages/scratch-gui` pasa.
-- [ ] `git diff v15.1.1 --stat -- packages/` está vacío.
+- [x] `npm run test:unit` en `packages/scratch-gui` pasa (50 suites, 328 tests).
+- [x] `git diff v15.1.1 --stat -- packages/` está vacío.
 
 ### Riesgos
 
@@ -146,6 +151,11 @@ cd ../..
   GUI. Si `npm ci` falla, mirar ahí primero.
 - El build de webpack de la GUI consume mucha memoria. Si falla con
   `heap out of memory`, exportar `NODE_OPTIONS=--max-old-space-size=8192`.
+- Upstream instala husky + commitlint: desde el merge, todos los commits
+  deben seguir Conventional Commits (`chore:`, `feat:`, `docs:`...).
+- Upstream trae `.github/workflows/` con semantic-release y publicación a
+  npm. En este forge no corren; si el repo se mueve a GitHub hay que
+  deshabilitarlos. Se registra como decisión nueva en la fase 2.
 
 ---
 

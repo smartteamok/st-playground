@@ -7,8 +7,10 @@ aplicación de escritorio que funciona sin conexión. Pensado para escuelas con
 computadoras compartidas y conectividad intermitente, con Moodle como sistema
 de gestión de aulas.
 
-Este repositorio va a contener el fork completo del monorepo una vez que se
-complete la fase 1 del plan. Hoy contiene solo la planificación.
+Este repositorio es el fork completo del monorepo: contiene la historia de
+upstream mergeada en el tag `v15.1.1` y, encima, los documentos de
+planificación y (en fases siguientes) las personalizaciones. Upstream queda
+como remote `upstream`; las actualizaciones entran por merge de tags.
 
 ## Documentos
 
@@ -21,8 +23,8 @@ complete la fase 1 del plan. Hoy contiene solo la planificación.
 
 | Fase | Descripción | Estado |
 |---|---|---|
-| 0 | Decisiones y toolchain | en curso |
-| 1 | Traer upstream y build verde | pendiente |
+| 0 | Decisiones y toolchain | toolchain lista; decisiones D-08/D-09/D-10 abiertas |
+| 1 | Traer upstream y build verde | completada (v15.1.1) |
 | 2 | Rebranding y limpieza | pendiente |
 | 3 | Assets propios y self-hosting | pendiente |
 | 4 | Desktop offline | pendiente |
@@ -30,18 +32,54 @@ complete la fase 1 del plan. Hoy contiene solo la planificación.
 
 ## Requisitos
 
-- Node 24.20.0 (`nvm use`)
+- Node 24.20.0 (`nvm use` lee el `.nvmrc`)
 - npm 10.9.x
+- Red durante `npm ci`: el `prepare` de `scratch-gui` descarga el firmware
+  de micro:bit desde `downloads.scratch.mit.edu`.
 
 ## Cómo correr
 
-Disponible a partir de la fase 1. Los comandos van a ser los del monorepo de
-upstream:
-
 ```bash
 npm ci
+
+# Los paquetes del workspace se resuelven por symlink y la GUI importa sus
+# dist/, así que hay que compilarlos una vez antes de levantar el editor.
+for p in task-herder scratch-storage scratch-svg-renderer scratch-paint scratch-render scratch-vm; do
+  NODE_ENV=production npm run build --workspace=packages/$p
+done
+
 npm start          # editor en http://localhost:8601
 ```
+
+Sin el paso intermedio, `npm start` compila pero falla con
+`Can't resolve '@scratch/scratch-storage'` y similares. Solo hace falta
+repetirlo si cambia alguno de esos seis paquetes (por D-04, no deberían
+cambiar).
+
+Verificación de la GUI:
+
+```bash
+cd packages/scratch-gui
+npm run test:unit      # 50 suites, 328 tests
+npm run build:dist     # dist/scratch-gui.js + dist/types/
+```
+
+Tiempos medidos en la fase 1 (4 CPUs, 15 GB RAM, Node 24.20.0):
+
+| Paso | Tiempo |
+|---|---|
+| `npm ci` | 1m33s |
+| build de los seis paquetes dependientes | 1m14s |
+| primer `npm start` hasta "compiled successfully" | ~11s |
+| `test:unit` de `scratch-gui` | 15s |
+| `build:dist` de `scratch-gui` | 29s |
+
+## Convenciones heredadas de upstream
+
+- Los mensajes de commit siguen [Conventional Commits](https://www.conventionalcommits.org/);
+  husky + commitlint rechazan los que no cumplen.
+- `AGENTS.md` y `CLAUDE.md` son de upstream y describen sus convenciones
+  por paquete. Aplican también acá, con la regla D-05 por encima.
 
 ## Licencia
 
