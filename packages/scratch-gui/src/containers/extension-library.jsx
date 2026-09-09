@@ -2,10 +2,13 @@ import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
 import VM from '@scratch/scratch-vm';
+import {connect} from 'react-redux';
 import {defineMessages, injectIntl} from 'react-intl';
 import intlShape from '../lib/intlShape.js';
 
 import extensionLibraryContent from '../lib/libraries/extensions/index.jsx';
+import {filterExtensionsForPlatform} from '../lib/offline-extensions.js';
+import {PLATFORM} from '../lib/platform.js';
 
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
@@ -48,7 +51,10 @@ class ExtensionLibrary extends React.PureComponent {
         }
     }
     render () {
-        const extensionLibraryThumbnailData = extensionLibraryContent.map(extension => ({
+        // ST-Playground hides the extensions that cannot work offline when
+        // running on the desktop (D-19).
+        const available = filterExtensionsForPlatform(extensionLibraryContent, this.props.platform);
+        const extensionLibraryThumbnailData = available.map(extension => ({
             rawURL: extension.iconURL || extensionIcon,
             ...extension
         }));
@@ -70,8 +76,13 @@ ExtensionLibrary.propTypes = {
     intl: intlShape.isRequired,
     onCategorySelected: PropTypes.func,
     onRequestClose: PropTypes.func,
+    platform: PropTypes.oneOf(Object.keys(PLATFORM)),
     visible: PropTypes.bool,
     vm: PropTypes.instanceOf(VM).isRequired
 };
 
-export default injectIntl(ExtensionLibrary);
+const mapStateToProps = state => ({
+    platform: state.scratchGui.platform.platform
+});
+
+export default injectIntl(connect(mapStateToProps)(ExtensionLibrary));
