@@ -39,14 +39,14 @@
       "id": "6.1",
       "libro": 6,
       "numero": 1,
-      "titulo": "Ballet",
+      "titulo": "Jardín vertical",
       "archivo": "libro-06/01.sb3"
     },
     {
       "id": "6.2",
       "libro": 6,
       "numero": 2,
-      "titulo": "Jardín vertical",
+      "titulo": "Prueba de color",
       "archivo": "libro-06/02.sb3"
     },
     {
@@ -60,14 +60,14 @@
       "id": "6.4",
       "libro": 6,
       "numero": 4,
-      "titulo": "Prueba de color",
+      "titulo": "Semáforo",
       "archivo": "libro-06/04.sb3"
     },
     {
       "id": "6.5",
       "libro": 6,
       "numero": 5,
-      "titulo": "Semáforo",
+      "titulo": "Ballet",
       "archivo": "libro-06/05.sb3"
     },
     {
@@ -81,7 +81,7 @@
       "id": "7.2",
       "libro": 7,
       "numero": 2,
-      "titulo": "Huella ecológica",
+      "titulo": "Separación de residuos",
       "archivo": "libro-07/02.sb3"
     },
     {
@@ -95,7 +95,7 @@
       "id": "7.4",
       "libro": 7,
       "numero": 4,
-      "titulo": "Separación de residuos",
+      "titulo": "Huella ecológica",
       "archivo": "libro-07/04.sb3"
     },
     {
