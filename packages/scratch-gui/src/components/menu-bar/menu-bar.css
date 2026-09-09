@@ -43,10 +43,9 @@
     opacity: 0;
 }
 .scratch-logo {
-    height: 2.45rem;
+    height: 2.55rem;
     width: auto;
     vertical-align: middle;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.28));
 }
 
 .scratch-logo.clickable {

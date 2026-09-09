@@ -1,3 +1,5 @@
 export default {
-    en: {}
+    en: {},
+    es: {},
+    'es-419': {}
 };

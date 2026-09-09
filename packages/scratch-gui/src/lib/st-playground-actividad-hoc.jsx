@@ -22,7 +22,6 @@ import {
     fetchCatalog,
     findActividad,
     isValidActividadId,
-    menuTitle,
     parseActividadId
 } from './st-playground-actividad';
 
@@ -34,6 +33,8 @@ const ACTIVIDAD_LOAD_ERROR = 'No se pudo abrir la actividad. Se carga un proyect
  * Lives in this package as a new HOC (D-05). Does not wrap HashParserHOC:
  * the playground omits HashParser when the query is present so the default
  * project fetch does not race the starter .sb3.
+ * The Actividades menu is hidden for now; keep `handleSelectActividad` so
+ * it can be wired again without touching the loader.
  * @param {object} WrappedComponent - GUI-like component to wrap.
  * @returns {object} - the wrapped component.
  */
@@ -42,8 +43,7 @@ const STPlaygroundActividadHOC = function (WrappedComponent) {
         constructor (props) {
             super(props);
             this.state = {
-                projectTitle: undefined,
-                actividadMenu: []
+                projectTitle: undefined
             };
             this.handleSelectActividad = this.handleSelectActividad.bind(this);
             this.flushQueuedActividad = this.flushQueuedActividad.bind(this);
@@ -54,15 +54,7 @@ const STPlaygroundActividadHOC = function (WrappedComponent) {
             this.loadChain = Promise.resolve();
             this.queuedActividadId = null;
 
-            this.catalogPromise = fetchCatalog().then(catalog => {
-                this.setState({
-                    actividadMenu: catalog.map(entry => ({
-                        title: menuTitle(entry),
-                        onClick: () => this.handleSelectActividad(entry.id)
-                    }))
-                });
-                return catalog;
-            }).catch(() => []);
+            this.catalogPromise = fetchCatalog().catch(() => []);
 
             const initialId = parseActividadId(
                 typeof window !== 'undefined' ? window.location.search : ''
@@ -155,8 +147,6 @@ const STPlaygroundActividadHOC = function (WrappedComponent) {
             return (
                 <WrappedComponent
                     {...childProps}
-                    onClickActividad={this.state.actividadMenu.length ?
-                        this.state.actividadMenu : undefined}
                     projectTitle={this.state.projectTitle}
                     vm={vm}
                 />

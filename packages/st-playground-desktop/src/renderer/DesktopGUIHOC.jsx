@@ -18,7 +18,6 @@ import {
     fetchCatalog,
     findActividad,
     isValidActividadId,
-    menuTitle,
     parseActividadId
 } from '../../../scratch-gui/src/lib/st-playground-actividad.js';
 
@@ -34,7 +33,8 @@ const isShowingProject = loadingState => (
  * Platform DESKTOP turns on the six offline extensions from D-19. Saving is
  * the native dialog in the main process via session.will-download, so canSave
  * stays false. Classroom starters (D-21) load through the shared actividad
- * helper and the Actividades menu passed as a prop (D-05).
+ * helper. The Actividades menu is hidden for now; starters still load via
+ * `?actividad=` and `st-playground://actividad/`.
  * @param {object} WrappedComponent - GUI-like component to wrap.
  * @returns {object} - the wrapped component.
  */
@@ -42,7 +42,7 @@ const DesktopGUIHOC = function (WrappedComponent) {
     class DesktopGUI extends React.Component {
         constructor (props) {
             super(props);
-            this.state = {projectTitle: undefined, actividadMenu: []};
+            this.state = {projectTitle: undefined};
             this.handleSetTitleFromSave = this.handleSetTitleFromSave.bind(this);
             this.handleUpdateProjectTitle = this.handleUpdateProjectTitle.bind(this);
             this.handleClickAbout = this.handleClickAbout.bind(this);
@@ -57,15 +57,7 @@ const DesktopGUIHOC = function (WrappedComponent) {
             this.loadChain = Promise.resolve();
             this.queuedActividadId = null;
 
-            this.catalogPromise = fetchCatalog().then(catalog => {
-                this.setState({
-                    actividadMenu: catalog.map(entry => ({
-                        title: menuTitle(entry),
-                        onClick: () => this.handleSelectActividad(entry.id)
-                    }))
-                });
-                return catalog;
-            }).catch(() => []);
+            this.catalogPromise = fetchCatalog().catch(() => []);
 
             this.props.onLoadingStarted();
             const api = desktopApi();
@@ -234,8 +226,6 @@ const DesktopGUIHOC = function (WrappedComponent) {
                     projectTitle={this.state.projectTitle}
                     showTutorials={false}
                     onClickAbout={this.handleClickAbout}
-                    onClickActividad={this.state.actividadMenu.length ?
-                        this.state.actividadMenu : undefined}
                     onUpdateProjectTitle={this.handleUpdateProjectTitle}
                 />
             );

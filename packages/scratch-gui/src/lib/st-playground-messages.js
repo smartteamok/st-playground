@@ -34,7 +34,18 @@ const FIXED = {
     'gui.defaultProject.meow': 'Blip'
 };
 
-const overlayLocale = messages => {
+/**
+ * `gui.sharedMessages.loadFromComputerTitle` is not in scratch-l10n, so
+ * react-intl falls back to the English defaultMessage. Overlay the missing
+ * string for the classroom locales.
+ */
+const LOAD_FROM_COMPUTER = {
+    en: 'Load from your computer',
+    es: 'Cargar desde tu ordenador',
+    'es-419': 'Cargar desde tu computador'
+};
+
+const overlayLocale = (messages, locale) => {
     const next = {...messages};
     for (const key of KEYS) {
         const value = next[key];
@@ -44,12 +55,16 @@ const overlayLocale = messages => {
             .replaceAll('Scratch 3.0', BRAND)
             .replaceAll('Scratch', BRAND);
     }
+    const loadTitle = LOAD_FROM_COMPUTER[locale];
+    if (loadTitle) {
+        next['gui.sharedMessages.loadFromComputerTitle'] = loadTitle;
+    }
     return {...next, ...FIXED};
 };
 
 const overlaid = {};
 for (const [locale, messages] of Object.entries(original)) {
-    overlaid[locale] = overlayLocale(messages);
+    overlaid[locale] = overlayLocale(messages, locale);
 }
 
 overlaid.en = {

@@ -6,8 +6,8 @@ not conflict.
 
 | File | Used as |
 |---|---|
-| `st-playground-logo.svg` | Menu bar wordmark (`scratch-logo.svg` and the four time-travel variants). Official Smart TEAM mark. |
-| `st-playground-logo-compact.svg` | Compact / Android wordmark: the violet **S** block (`scratch-logo-android.svg`) |
+| `st-playground-logo.svg` | Menu bar wordmark (`scratch-logo.svg` and the four time-travel variants). Smart TEAM blanco (bloques blancos + tagline). |
+| `st-playground-logo-compact.svg` | Compact / Android wordmark: the white **S** block (`scratch-logo-android.svg`) |
 | `st-playground-icon.svg` | Isotype (same S block) |
 | `st-playground-icon-512.png` | Installer icon and source for the `.ico` |
 | `favicon/` | Smart TEAM tab icons (violet, cyan, amber, green, coral) plus the cycle script |
