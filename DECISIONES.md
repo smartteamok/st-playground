@@ -147,6 +147,74 @@ bajo el scope `@scratch`. En el forge actual no se ejecutan. Si el repo se
 migra a GitHub hay que deshabilitarlos antes del primer push, o van a
 intentar publicar paquetes con la marca de Scratch.
 
+## D-16. Los medios de la biblioteca se versionan en el repo
+
+Estado: decidida.
+
+Los 1316 assets de la biblioteca (después de sacar los personajes de marca)
+pesan ~35 MB. Se descargan una vez con `scripts/fetch-library-assets.mjs` y
+se commitean en `assets/library/`.
+
+La alternativa era ignorarlos y bajarlos en cada build, pero eso obliga a
+tener red en la máquina que arma el instalador y ata el fork a que el CDN de
+Scratch siga en pie. El costo es despreciable: el `.git` ya pesa 5.3 GB por
+la historia de upstream.
+
+El script tiene modo `--check`, que compara la carpeta contra los JSON de la
+biblioteca sin descargar nada. Es parte de la rutina de merge de upstream.
+
+## D-17. La storage propia se enchufa en `legacy-config.ts`
+
+Estado: decidida.
+
+`packages/scratch-gui/src/lib/st-playground-storage.ts` implementa
+`GUIStorage` con un único `WebStore` que apunta a `static/library-assets/`.
+No hereda de `LegacyStorage` para no arrastrar sus stores remotos, y no
+define `backpackStorage` ni `cloudVariables`, con lo cual la mochila y las
+variables en la nube quedan apagadas sin pasar props.
+
+Se inyecta reemplazando la instancia en `src/legacy-config.ts` en vez de
+pasar un `configFactory` a `AppStateHOC`, aunque eso último sea el mecanismo
+previsto por upstream. El motivo es concreto:
+`components/scratch-image/scratch-image.jsx:40` no usa la storage configurada
+sino el singleton `legacyConfig.storage.scratchStorage`, y es el camino por el
+que el escritorio carga todas las miniaturas. Con `configFactory` habría dos
+instancias de `ScratchStorage` y las miniaturas se romperían en la app de
+escritorio, que es el entregable principal.
+
+Costo: se edita un archivo de upstream de 5 líneas. Si upstream algún día
+arregla `ScratchImage`, se puede volver a `configFactory`.
+
+## D-18. Los personajes de marca salen de la biblioteca
+
+Estado: decidida.
+
+`TRADEMARK` nombra explícitamente al Scratch Cat, Gobo, Pico, Nano, Tera y
+Giga como marcas de la Scratch Foundation. Se quitan de `sprites.json` los 10
+sprites correspondientes y de `costumes.json` sus 31 disfraces exclusivos, y
+se renombra el sonido "Scratch Beatbox" a "Beatbox".
+
+Quedan 333 sprites y 884 disfraces, todos CC BY-SA 2.0, atribuidos en
+`CREDITS.md`. No se crean personajes propios de reemplazo por ahora.
+
+## D-19. La biblioteca de extensiones se filtra por plataforma
+
+Estado: decidida.
+
+En escritorio se muestran solo las extensiones que funcionan con la red
+cortada: Música, Lápiz, Sensor de vídeo, Detección de caras, Makey Makey y
+micro:bit. Quedan fuera Texto a voz y Traducir, que llaman a servidores de
+Scratch en cada bloque, y Go Direct, EV3, BOOST y WeDo 2.0, que piden
+hardware que las escuelas no tienen.
+
+micro:bit entra porque se usa en las escuelas y funciona por Bluetooth con
+Scratch Link sin necesidad de internet; el firmware ya se sirve desde
+`static/microbit/`.
+
+En web se muestran las 12. El filtro es en tiempo de ejecución, sobre
+`state.scratchGui.platform`, y no una constante de compilación, porque el
+`dist/` de la GUI es uno solo y lo consumen las dos aplicaciones.
+
 ## D-11. Targets de instalador
 
 Estado: abierta. Bloquea: fase 4.

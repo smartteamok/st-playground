@@ -29,7 +29,7 @@ propios: `@st-playground` (D-09).
 Fase 0  Decisiones y toolchain      sin código                       completa
 Fase 1  Upstream y build verde      el repo pasa a ser el fork       completa
 Fase 2  Rebranding y limpieza       packages/scratch-gui             completa
-Fase 3  Assets propios y self-host  packages/scratch-gui + scripts
+Fase 3  Biblioteca propia y offline  packages/scratch-gui + assets/
 Fase 4  Desktop offline             packages/st-playground-desktop   entregable
 ------- validar en aula -------
 Fase 5  Web + LTI 1.3 + guardado    packages/st-playground-web       condicional
@@ -433,83 +433,279 @@ Borrados: 1481 archivos de `decks/`.
 
 ---
 
-## Fase 3. Assets propios y self-hosting de la biblioteca
+## Fase 3. Biblioteca de medios propia y self-hosting
 
 ### Objetivo
 
-Que la biblioteca de sprites, fondos y sonidos funcione sin acceso a
-`assets.scratch.mit.edu`, y que no contenga personajes de marca de Scratch.
-Esta fase alimenta directamente el `static/fetched` del desktop, por eso va
-antes de la fase 4.
+Que la biblioteca de sprites, disfraces, fondos y sonidos funcione con la red
+cortada, que no queden personajes de marca de Scratch, y que la biblioteca de
+extensiones no ofrezca en la app de escritorio nada que falle sin conexión.
+Esta fase alimenta directamente el instalador de la fase 4, por eso va antes.
 
 ### Prerrequisitos
 
-Fase 2 completa.
+Fase 2 completa. Decisiones D-16 (assets versionados), D-17 (storage propia),
+D-18 (personajes de marca fuera) y D-19 (extensiones por plataforma) cerradas.
+
+### Inventario verificado
+
+Medido sobre el árbol actual el 2026-09-09. Los tamaños salen de muestrear
+25 assets por extensión contra `cdn.assets.scratch.mit.edu`.
+
+| Archivo | Entradas | Referencias `md5ext` |
+|---|---|---|
+| `src/lib/libraries/sprites.json` | 343 | 1365 (disfraces y sonidos anidados) |
+| `src/lib/libraries/costumes.json` | 915 | 915 |
+| `src/lib/libraries/backdrops.json` | 85 | 85 |
+| `src/lib/libraries/sounds.json` | 354 | 354 |
+
+Assets únicos: **1347** (804 SVG, 350 WAV, 193 PNG), **~36 MB**. Después de
+sacar los personajes de marca quedan **1316** y ~35 MB. La estimación de
+~300 MB que figuraba en la versión anterior de este plan era errónea.
+
+Personajes de marca en la biblioteca (`TRADEMARK` los nombra uno por uno):
+10 sprites (Cat, Cat 2, Cat Flying, Giga, Giga Walking, Gobo, Nano, Pico,
+Pico Walking, Tera), 31 disfraces exclusivos de ellos y el sonido
+"Scratch Beatbox". Ningún fondo.
+
+Fuera de la biblioteca no queda nada que se baje de un tercero: las fuentes
+vienen de `scratch-render-fonts`, los sonidos de la extensión Música están
+embebidos en el bundle del VM, el `.hex` de micro:bit se sirve desde
+`static/microbit/`, y las URLs a `scratch.mit.edu` que sobreviven son enlaces
+de ayuda, no requests.
+
+### Cómo se resuelve hoy un asset de la biblioteca
+
+Hay tres caminos y los tres tienen que quedar apuntando a disco. El de la
+izquierda es el que usa la web; el del medio, el escritorio.
+
+```mermaid
+flowchart TD
+    Item["Miniatura en la biblioteca"] --> Plat{"platform"}
+    Plat -->|WEB| ImgTag["img src = assetServiceUri"]
+    Plat -->|DESKTOP| SImg["ScratchImage"]
+    ImgTag --> GetUrl["storage.getLibraryAssetUrl()"]
+    SImg --> Singleton["legacyConfig.storage.scratchStorage.load()"]
+    Insert["Insertar sprite, disfraz o sonido"] --> VMStore["vm.runtime.storage.load()"]
+    Singleton --> WebStore["WebStore registrado en ScratchStorage"]
+    VMStore --> WebStore
+    GetUrl --> Disco[("assets/library")]
+    WebStore --> Disco
+```
+
+Dos detalles del árbol de upstream que condicionan el diseño:
+
+1. `components/library-item/library-item.jsx:41-49` decide por plataforma:
+   en `WEB` hace `<img src>` con la URL que devolvió `getLibraryAssetUrl`, y
+   en `DESKTOP`/`ANDROID` delega en `ScratchImage`, que ignora esa URL.
+2. `components/scratch-image/scratch-image.jsx:40` no usa la storage
+   configurada sino el singleton `legacyConfig.storage.scratchStorage`. Si se
+   inyecta una storage propia por `configFactory`, en escritorio conviven dos
+   instancias de `ScratchStorage` y las miniaturas se rompen.
+
+Por eso la storage propia se enchufa en `legacy-config.ts` (5 líneas) y no
+por `configFactory`: así la misma instancia sirve al VM, a las miniaturas web
+y a las de escritorio (D-17).
 
 ### Tareas
 
-#### 3.1 Depurar la biblioteca
+#### 3.1 Sacar los personajes de marca (D-18)
 
-Archivos: `packages/scratch-gui/src/lib/libraries/sprites.json`,
-`costumes.json`, `backdrops.json`, `sounds.json`.
+Archivos: `src/lib/libraries/sprites.json` y `costumes.json`.
 
-Quitar entradas de personajes propios de Scratch (marca): Cat, Cat 2,
-Cat Flying, Gobo, Pico, Nano, Tera, Giga y sus disfraces. El resto de la
-biblioteca está bajo CC BY-SA 2.0; conservar y atribuir.
+- Quitar los 10 sprites y los 31 disfraces listados en el inventario.
+  Quedan 333 sprites y 884 disfraces.
+- En `sounds.json`, renombrar "Scratch Beatbox" a "Beatbox". El asset no
+  cambia, solo el `name`; los nombres de la biblioteca no pasan por i18n.
+- `backdrops.json` no se toca.
 
-Si se agregan sprites propios, `packages/scratch-media-lib-scripts` regenera
-los JSON a partir de una carpeta de assets (ver su `README.md`).
+El resto de la biblioteca es CC BY-SA 2.0: se conserva y se atribuye en 3.6.
 
-#### 3.2 Descarga de assets
+#### 3.2 Descargar y versionar los assets (D-16)
 
-Crear `scripts/fetch-library-assets.mjs` (raíz del repo). Derivado de
-`scratch-desktop/scripts/fetchMediaLibraryAssets.js`: recorre los cuatro JSON,
-junta los `md5ext` únicos (incluyendo disfraces y sonidos anidados en
-`sprites.json`) y descarga cada uno desde
-`https://assets.scratch.mit.edu/internalapi/asset/<md5ext>/get/` a
-`static-assets/library/<md5ext>`.
+Script nuevo `scripts/fetch-library-assets.mjs`, sin dependencias fuera de
+Node (usa `fetch` y `node:crypto`):
 
-`static-assets/` se ignora en git (son ~300 MB) y se genera en build.
+- Recorre los cuatro JSON y junta los `md5ext` únicos, incluyendo los
+  anidados dentro de `sprites.json`.
+- Descarga cada uno de
+  `https://cdn.assets.scratch.mit.edu/internalapi/asset/<md5ext>/get/` a
+  `assets/library/<md5ext>`, con concurrencia 16 y 3 reintentos con backoff.
+- Verifica que el MD5 del contenido coincida con el nombre del archivo. Si no
+  coincide, borra y reintenta. El `etag` que devuelve el CDN es el mismo MD5,
+  así que la verificación es barata.
+- Salta los archivos que ya están y son válidos, para que correrlo dos veces
+  no vuelva a bajar nada.
+- Modo `--check`: no descarga, solo compara el contenido de `assets/library/`
+  contra los JSON y sale con código distinto de cero si falta o sobra algo.
+  Es lo que se corre después de cada merge de upstream.
 
-#### 3.3 Resolución de assets desde la GUI
+`assets/library/` se commitea. Son ~35 MB contra un `.git` que ya pesa 5.3 GB
+por la historia de upstream, y a cambio el instalador de la fase 4 se puede
+construir en una máquina sin salida a internet.
 
-Crear `packages/scratch-gui/src/lib/st-playground-storage.js` con una
-implementación de `GUIStorage` (interfaz en `src/gui-config.ts`):
+#### 3.3 Storage propia (D-17)
 
-- `scratchStorage`: instancia de `ScratchStorage` con un `WebStore` apuntando
-  al host propio (web) o al helper de disco (desktop, fase 4).
-- `getLibraryAssetUrl(assetId, dataFormat)`: devuelve la URL local.
-- `setAssetHost(host)`: guarda el host.
-- `saveProject()`: en esta fase, rechaza con un error claro (no hay backend).
+Archivo nuevo `packages/scratch-gui/src/lib/st-playground-storage.ts`, que
+implementa `GUIStorage` (interfaz en `src/gui-config.ts`) sin heredar de
+`LegacyStorage`, para no arrastrar sus stores remotos:
 
-Este archivo es nuevo (regla D-05, punto 3). El punto de montaje lo pasa por
-`AppStateHOC` como `config.storage`.
+```ts
+export class STPlaygroundStorage implements GUIStorage {
+    readonly scratchStorage = new ScratchStorage();
 
-#### 3.4 Créditos
+    constructor (private readonly libraryAssetBase = 'static/library-assets') {
+        this.cacheDefaultProject();
+        const {AssetType} = this.scratchStorage;
+        this.scratchStorage.addWebStore(
+            [AssetType.ImageVector, AssetType.ImageBitmap, AssetType.Sound],
+            asset => `${this.libraryAssetBase}/${asset.assetId}.${asset.dataFormat}`
+        );
+    }
 
-Crear `CREDITS.md` en la raíz con la atribución CC BY-SA 2.0 de la biblioteca
-de medios de Scratch y las licencias de assets propios.
+    getLibraryAssetUrl (assetId: string, dataFormat: string): string {
+        return `${this.libraryAssetBase}/${assetId}.${dataFormat}`;
+    }
+
+    saveProject (): Promise<{id: ProjectId}> {
+        return Promise.reject(new Error('ST-Playground guarda en disco, no en un servidor'));
+    }
+}
+```
+
+- `cacheDefaultProject()` replica las ocho líneas de `LegacyStorage` que
+  meten el proyecto por defecto en el `builtinHelper`. `setTranslatorFunction`
+  lo vuelve a cachear con el idioma nuevo, igual que upstream.
+- `setProjectHost`, `setProjectToken`, `setProjectMetadata` y `setAssetHost`
+  quedan como no-ops. Así los defaults de `project-fetcher-hoc.jsx:149-150`
+  (`https://assets.scratch.mit.edu`) dejan de tener efecto sin tener que
+  pasar props desde cada punto de montaje.
+- No se define `backpackStorage` ni `cloudVariables`. Efecto lateral bueno:
+  `gui.jsx:712` calcula `backpackConfigured` a partir de
+  `config.storage?.backpackStorage`, así que la mochila queda oculta sola y
+  el `backpackVisible={false}` del punto de montaje pasa a ser redundante.
+- `libraryAssetBase` es parámetro del constructor para que la fase 5 pueda
+  pasar una ruta absoluta cuando el editor viva en una URL anidada.
+
+`src/legacy-config.ts` pasa a instanciar `STPlaygroundStorage`. Es el único
+archivo de upstream que se edita en la fase, tiene 5 líneas y un conflicto
+ahí se resuelve de un vistazo.
+
+#### 3.4 Servir `assets/library/` desde webpack
+
+En `webpack.config.js`, en el `CopyWebpackPlugin` de `buildConfig` (el que ya
+copia `static`), agregar:
+
+```js
+{
+    from: '../../assets/library',
+    to: 'static/library-assets',
+    noErrorOnMissing: true
+}
+```
+
+Cubre `npm start` y `npm run build` con la misma entrada, porque el dev
+server sirve lo que emite el plugin. No se agrega a `distConfig`: el bundle
+de librería que consumen el escritorio y la web no debe traer 35 MB de
+medios; cada aplicación los copia por su cuenta (fase 4).
+
+#### 3.5 Extensiones según plataforma (D-19)
+
+Las 12 extensiones se parten en dos grupos. En escritorio se muestran solo
+las que andan con la red cortada; en web se muestran todas.
+
+| Extensión | Escritorio | Por qué |
+|---|---|---|
+| Música, Lápiz, Sensor de vídeo, Detección de caras, Makey Makey | sí | todo local: sonidos embebidos, cámara, teclado USB |
+| micro:bit | sí | va por Bluetooth con Scratch Link; el firmware se sirve desde `static/microbit/` |
+| Texto a voz, Traducir | no | llaman a servidores de Scratch en cada bloque |
+| Go Direct, EV3, BOOST, WeDo 2.0 | no | hardware que las escuelas no tienen |
+
+Archivo nuevo `src/lib/offline-extensions.js` con la lista de `extensionId`
+habilitados y la función de filtro. `containers/extension-library.jsx` se
+conecta a redux (hoy no lo está) para leer `state.scratchGui.platform` y
+aplicar el filtro cuando la plataforma es `DESKTOP`. Son unas seis líneas y
+es el cuarto cambio de JSX justificado del fork.
+
+Se elige plataforma en tiempo de ejecución y no una constante de compilación
+porque el `dist/` de la GUI es uno solo y lo consumen las dos aplicaciones.
+Efecto colateral útil: `?isScratchDesktop=true` en el playground ya simula
+`DESKTOP`, así que el filtro se puede probar sin construir el escritorio.
+
+#### 3.6 Créditos
+
+`CREDITS.md` en la raíz: atribución CC BY-SA 2.0 de la biblioteca de medios
+de Scratch, licencia AGPL-3.0 del código heredado, y los assets propios de
+`brand/`. Se enlaza desde `README.md`. El "Acerca de" que lo muestra dentro
+de la aplicación es de la fase 4.
+
+#### 3.7 Verificación offline
+
+Script nuevo `scripts/check-offline.mjs`, con el Playwright que ya está en el
+repo:
+
+- Levanta el build, abre el editor y aborta toda request cuyo host no sea
+  `localhost`, registrando cuáles fueron.
+- Abre las bibliotecas de sprites, disfraces, fondos y sonidos y verifica que
+  las miniaturas visibles tengan `naturalWidth > 0`.
+- Pasa el mouse por un sonido para forzar la carga y la reproducción.
+- Inserta un sprite y un fondo, y confirma que aparecen en el escenario.
+- Repite con `?isScratchDesktop=true` para cubrir el camino de `ScratchImage`
+  y el filtro de extensiones.
+- Sale con código distinto de cero si hubo una sola request abortada o una
+  miniatura vacía.
+
+Junto con `scripts/check-branding.mjs` de la fase 2, queda la red de
+seguridad para cada merge de upstream.
 
 ### Archivos tocados
 
-- `packages/scratch-gui/src/lib/libraries/*.json`
-- `packages/scratch-gui/src/lib/st-playground-storage.js` (nuevo)
-- `packages/scratch-gui/src/playground/render-gui.jsx` (pasa el storage)
-- `scripts/fetch-library-assets.mjs` (nuevo)
-- `CREDITS.md` (nuevo)
-- `.gitignore` (`static-assets/`)
+Nuevos:
+
+- `assets/library/**` (1316 archivos, ~35 MB, versionados)
+- `scripts/fetch-library-assets.mjs`
+- `scripts/check-offline.mjs`
+- `packages/scratch-gui/src/lib/st-playground-storage.ts`
+- `packages/scratch-gui/src/lib/offline-extensions.js`
+- `CREDITS.md`
+
+Editados:
+
+- `packages/scratch-gui/src/lib/libraries/sprites.json`, `costumes.json`,
+  `sounds.json`
+- `packages/scratch-gui/src/legacy-config.ts`
+- `packages/scratch-gui/src/containers/extension-library.jsx`
+- `packages/scratch-gui/webpack.config.js`
+- `README.md`
 
 ### Criterios de aceptación
 
-- [ ] Con `assets.scratch.mit.edu` y `cdn.assets.scratch.mit.edu`
-      redirigidos a `127.0.0.1` en `/etc/hosts`, la biblioteca de sprites,
-      fondos y sonidos abre, muestra miniaturas, y los sonidos se reproducen.
-- [ ] Ninguna entrada de la biblioteca contiene los personajes listados en
-      3.1.
-- [ ] `node scripts/fetch-library-assets.mjs` termina sin errores y el conteo
-      de archivos en `static-assets/library/` coincide con el conteo de
-      `md5ext` únicos en los JSON.
-- [ ] `CREDITS.md` existe y se enlaza desde el "Acerca de".
+- [ ] `node scripts/fetch-library-assets.mjs --check` pasa y
+      `assets/library/` tiene 1316 archivos.
+- [ ] Ninguna entrada de `sprites.json` ni `costumes.json` menciona a los
+      personajes de marca, y `sounds.json` no dice "Scratch".
+- [ ] `node scripts/check-offline.mjs` pasa: cero requests externas, las
+      cuatro bibliotecas muestran miniaturas y un sonido se reproduce.
+- [ ] Lo mismo con `?isScratchDesktop=true`, y ahí la biblioteca de
+      extensiones muestra 6 entradas en lugar de 12.
+- [ ] En web (sin el parámetro) siguen apareciendo las 12 extensiones.
+- [ ] `npm run test:unit` en `packages/scratch-gui` sigue pasando.
+- [ ] `node scripts/check-branding.mjs` sigue pasando.
+
+### Riesgos
+
+- El `CopyWebpackPlugin` copia 1316 archivos en el primer arranque del dev
+  server. Si el arranque se vuelve molesto, la alternativa es servirlos con
+  `devServer.static` apuntando a `assets/library` y dejar el copy solo para
+  `npm run build`.
+- `scratch-storage` prueba los stores en orden de registro y saltea el que
+  devuelve una URL falsa. Como la storage propia registra un único store, no
+  hay fallback a la red: si un archivo falta en `assets/library/`, la
+  miniatura queda vacía en vez de bajarse. Es lo buscado, y por eso el modo
+  `--check` del script de descarga es parte del mantenimiento.
+- Si upstream agrega entradas a los JSON de la biblioteca, el merge las trae
+  pero no trae los archivos. `--check` lo detecta y una corrida del script
+  lo arregla.
 
 ---
 
@@ -573,9 +769,10 @@ Referencias en `scratch-desktop` para cada pieza: `src/main/index.js`,
 `DesktopGUIHOC.jsx` monta la GUI con:
 
 - `canSave={false}`, `canEditTitle`, `platform="DESKTOP"`.
-- `onStorageInit`: agrega `DiskStorageHelper` a `scratchStorage`. El helper
-  lee de `static/fetched/<md5ext>` (relativo al `resourcesPath` de la app
-  empaquetada).
+- La biblioteca ya se resuelve sola: `STPlaygroundStorage` (fase 3) pide
+  `static/library-assets/<md5ext>` en forma relativa, y con `index.html`
+  cargado por `file://` eso cae dentro del paquete. No hace falta un
+  `DiskStorageHelper` como el de `scratch-desktop`.
 - La misma configuración de props de la fase 2 (sin comunidad, sin cuenta,
   sin telemetría).
 - `onClickAbout`: abre una ventana "Acerca de" con nombre, versión,
@@ -595,9 +792,11 @@ Referencias en `scratch-desktop` para cada pieza: `src/main/index.js`,
 
 #### 4.4 Assets embebidos
 
-Script `fetch` en el `package.json` del desktop que invoca
-`scripts/fetch-library-assets.mjs` (fase 3) y copia el resultado a
-`static/fetched/`. `electron-builder` lo incluye en `extraResources`.
+`assets/library/` ya está en el repo (fase 3, D-16), así que el build no
+necesita red: el paso de empaquetado copia esa carpeta a
+`static/library-assets/` y `electron-builder` la incluye en `extraResources`.
+Antes de empaquetar se corre `node scripts/fetch-library-assets.mjs --check`
+para no publicar un instalador con medios faltantes.
 
 #### 4.5 Instaladores
 
@@ -689,14 +888,14 @@ Servidor Node con:
     un token de sesión corto.
   - `GET/PUT /api/projects/:id`: `project.json`.
   - `GET/POST /api/assets/:md5ext`: assets de proyecto.
-  - `GET /api/library/:md5ext`: sirve `static-assets/library/` (fase 3).
+  - `GET /api/library/:md5ext`: sirve `assets/library/` (fase 3).
   - `GET /api/context/:contextId/projects`: listado para el docente (verifica
     rol vía claims del launch).
 - Sirve el bundle de la GUI (`packages/scratch-gui/dist/`).
 
 #### 5.2 Storage web
 
-Completar `st-playground-storage.js` (fase 3): `saveProject()` hace `PUT` al
+Completar `st-playground-storage.ts` (fase 3): `saveProject()` hace `PUT` al
 backend, `setProjectHost`/`setProjectToken` reciben host y token de sesión.
 `ProjectSaverHOC` de la GUI ya dispara el autosave; el punto de montaje web
 pasa `canSave`, `projectHost`, `projectToken` y `projectId`.
@@ -757,6 +956,16 @@ Conflictos esperados y cómo resolverlos:
 | `packages/scratch-gui/webpack.config.js` | Títulos y `GA_ID` | Retomar los cambios de la fase 2 |
 | `packages/scratch-gui/src/playground/render-gui.jsx` | Props del montaje | Retomar los cambios de la fase 2 |
 | Assets reemplazados | Upstream cambia un SVG | Conservar el propio |
+| `packages/scratch-gui/src/legacy-config.ts` | Storage propia (D-17) | Conservar `STPlaygroundStorage` |
+| `src/lib/libraries/*.json` | Upstream agrega medios | Tomar lo de upstream, volver a sacar los personajes de marca y correr el script de descarga |
+
+Después de cada merge, correr las tres verificaciones:
+
+```bash
+node scripts/check-branding.mjs
+node scripts/fetch-library-assets.mjs --check
+node scripts/check-offline.mjs
+```
 
 Si un merge trae un conflicto en JSX que no está en esta tabla, es señal de
 que se violó D-05 en alguna fase; anotarlo en `DECISIONES.md`.
