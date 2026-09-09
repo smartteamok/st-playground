@@ -109,35 +109,35 @@
       "id": "8.1",
       "libro": 8,
       "numero": 1,
-      "titulo": "Ambientación",
+      "titulo": "Sistema de seguridad",
       "archivo": "libro-08/01.sb3"
     },
     {
       "id": "8.2",
       "libro": 8,
       "numero": 2,
-      "titulo": "Áreas verdes",
+      "titulo": "Ambientación",
       "archivo": "libro-08/02.sb3"
     },
     {
       "id": "8.3",
       "libro": 8,
       "numero": 3,
-      "titulo": "Búsqueda del tesoro",
+      "titulo": "Áreas verdes",
       "archivo": "libro-08/03.sb3"
     },
     {
       "id": "8.4",
       "libro": 8,
       "numero": 4,
-      "titulo": "Museo accesible",
+      "titulo": "Búsqueda del tesoro",
       "archivo": "libro-08/04.sb3"
     },
     {
       "id": "8.5",
       "libro": 8,
       "numero": 5,
-      "titulo": "Sistema de seguridad",
+      "titulo": "Museo accesible",
       "archivo": "libro-08/05.sb3"
     }
   ]

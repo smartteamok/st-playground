@@ -65,11 +65,11 @@ DNS apunte, la URL `*.vercel.app` del proyecto):
 | 7.3 | Iluminación inteligente | `https://st-playground.smartteamdigital.com/?actividad=7.3` |
 | 7.4 | Huella ecológica | `https://st-playground.smartteamdigital.com/?actividad=7.4` |
 | 7.5 | Vehículos autónomos | `https://st-playground.smartteamdigital.com/?actividad=7.5` |
-| 8.1 | Ambientación | `https://st-playground.smartteamdigital.com/?actividad=8.1` |
-| 8.2 | Áreas verdes | `https://st-playground.smartteamdigital.com/?actividad=8.2` |
-| 8.3 | Búsqueda del tesoro | `https://st-playground.smartteamdigital.com/?actividad=8.3` |
-| 8.4 | Museo accesible | `https://st-playground.smartteamdigital.com/?actividad=8.4` |
-| 8.5 | Sistema de seguridad | `https://st-playground.smartteamdigital.com/?actividad=8.5` |
+| 8.1 | Sistema de seguridad | `https://st-playground.smartteamdigital.com/?actividad=8.1` |
+| 8.2 | Ambientación | `https://st-playground.smartteamdigital.com/?actividad=8.2` |
+| 8.3 | Áreas verdes | `https://st-playground.smartteamdigital.com/?actividad=8.3` |
+| 8.4 | Búsqueda del tesoro | `https://st-playground.smartteamdigital.com/?actividad=8.4` |
+| 8.5 | Museo accesible | `https://st-playground.smartteamdigital.com/?actividad=8.5` |
 
 En red local sin Internet, reemplazá el origen por
 `http://<ip>:8601` (mismo `?actividad=`).
