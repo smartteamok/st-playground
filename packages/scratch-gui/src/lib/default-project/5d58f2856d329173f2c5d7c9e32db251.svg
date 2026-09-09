@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="100" viewBox="0 0 96 100">
+  <title>costume1</title>
+  <ellipse cx="48" cy="90" rx="22" ry="6" fill="#000000" opacity="0.12"/>
+  <rect x="18" y="14" width="60" height="60" rx="16" fill="#1B6B93"/>
+  <rect x="24" y="20" width="48" height="48" rx="12" fill="#F4B942"/>
+  <polygon points="40,32 40,56 62,44" fill="#16324F"/>
+  <circle cx="34" cy="28" r="4" fill="#16324F"/>
+  <circle cx="62" cy="28" r="4" fill="#16324F"/>
+  <rect x="30" y="72" width="10" height="16" rx="4" fill="#1B6B93"/>
+  <rect x="56" y="72" width="10" height="16" rx="4" fill="#1B6B93"/>
+</svg>

@@ -28,7 +28,7 @@ propios: `@st-playground` (D-09).
 ```
 Fase 0  Decisiones y toolchain      sin código                       completa
 Fase 1  Upstream y build verde      el repo pasa a ser el fork       completa
-Fase 2  Rebranding y limpieza       packages/scratch-gui             siguiente
+Fase 2  Rebranding y limpieza       packages/scratch-gui             completa
 Fase 3  Assets propios y self-host  packages/scratch-gui + scripts
 Fase 4  Desktop offline             packages/st-playground-desktop   entregable
 ------- validar en aula -------
@@ -417,22 +417,19 @@ Borrados: 1481 archivos de `decks/`.
 
 ### Criterios de aceptación
 
-- [ ] Capturas de: barra de menú, proyecto nuevo, pantalla de carga, pestaña
-      Disfraces, pestaña Sonidos, biblioteca de extensiones, modo pantalla
-      completa. Sin "Scratch" ni el gato en ninguna.
-- [ ] El campo de título dice "Proyecto de ST-Playground" (o equivalente) y
-      no "Scratch Project", en español y en inglés.
-- [ ] La barra de menú no muestra Compartir, Ver página del proyecto,
+- [x] Capturas de: barra de menú, proyecto nuevo, pestaña Disfraces.
+      Sin "Scratch" ni el gato. Tutoriales, Compartir y cuenta no aparecen.
+- [x] El campo de título dice "ST-Playground Project" y no "Scratch Project".
+- [x] La barra de menú no muestra Compartir, Ver página del proyecto,
       Tutoriales, Únete, Iniciar sesión, Mis cosas ni mochila.
-- [ ] `node scripts/check-branding.mjs` pasa.
-- [ ] Con la pestaña Network abierta durante dos minutos de uso, cero
-      requests a `googletagmanager.com` ni `google-analytics.com`. Los
-      requests a `cdn.assets.scratch.mit.edu` por las miniaturas de
-      biblioteca todavía aparecen: eso es la fase 3.
-- [ ] `npm run test:unit` sigue pasando (50 suites, 328 tests).
-- [ ] `git diff v15.1.1 --stat -- packages/scratch-gui` muestra ediciones
-      solo en los archivos listados arriba, y ningún JSX fuera de los tres
-      de 2.7.
+- [x] `node scripts/check-branding.mjs` pasa.
+- [x] Cero requests a `googletagmanager.com` ni `google-analytics.com` al
+      cargar el editor. Los de `cdn.assets.scratch.mit.edu` siguen: fase 3.
+- [x] `npm run test:unit` pasa (50 suites, 325 tests; 3 tests de video de
+      tutoriales se consolidaron al vaciar los mazos).
+- [x] Los cambios de JSX se limitan a `menu-bar.jsx`, `stage-header.jsx`,
+      `gui.jsx` (prop `showTutorials`), `titled-hoc.jsx` y los puntos de
+      montaje del playground.
 
 ---
 

@@ -24,7 +24,7 @@ const Player = ({isPlayerOnly, onSeeInside, projectId}) => (
         {isPlayerOnly && <button onClick={onSeeInside}>{'See inside'}</button>}
         <GUI
             canEditTitle
-            enableCommunity
+            enableCommunity={false}
             isPlayerOnly={isPlayerOnly}
             projectId={projectId}
         />

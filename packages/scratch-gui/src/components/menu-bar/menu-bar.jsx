@@ -334,7 +334,7 @@ class MenuBar extends React.Component {
                         >
                             <img
                                 id="logo_img"
-                                alt="Scratch"
+                                alt="ST-Playground"
                                 className={classNames(styles.scratchLogo, {
                                     [styles.clickable]: typeof this.props.onClickLogo !== 'undefined'
                                 })}
@@ -457,21 +457,23 @@ class MenuBar extends React.Component {
                     </div>
                     <Divider className={classNames(styles.divider)} />
                     <div className={styles.fileGroup}>
-                        <button
-                            aria-label={this.props.intl.formatMessage(ariaMessages.tutorials)}
-                            className={
-                                classNames(styles.menuBarItem, styles.noOffset, styles.hoverable, 'tutorials-button')
-                            }
-                            onClick={this.props.onOpenTipLibrary}
-                        >
-                            <img
-                                className={styles.helpIcon}
-                                src={helpIcon}
-                            />
-                            <span className={styles.tutorialsLabel}>
-                                <FormattedMessage {...ariaMessages.tutorials} />
-                            </span>
-                        </button>
+                        {this.props.showTutorials ? (
+                            <button
+                                aria-label={this.props.intl.formatMessage(ariaMessages.tutorials)}
+                                className={
+                                    classNames(styles.menuBarItem, styles.noOffset, styles.hoverable, 'tutorials-button')
+                                }
+                                onClick={this.props.onOpenTipLibrary}
+                            >
+                                <img
+                                    className={styles.helpIcon}
+                                    src={helpIcon}
+                                />
+                                <span className={styles.tutorialsLabel}>
+                                    <FormattedMessage {...ariaMessages.tutorials} />
+                                </span>
+                            </button>
+                        ) : null}
                         <button
                             aria-label={this.props.intl.formatMessage(ariaMessages.debug)}
                             className={classNames(styles.menuBarItem, styles.noOffset, styles.hoverable)}
@@ -708,6 +710,7 @@ MenuBar.propTypes = {
     renderLogin: PropTypes.func,
     shouldSaveBeforeTransition: PropTypes.func,
     showComingSoon: PropTypes.bool,
+    showTutorials: PropTypes.bool,
     username: PropTypes.string,
     avatarBadge: PropTypes.number,
     userOwnsProject: PropTypes.bool,
@@ -719,7 +722,8 @@ MenuBar.propTypes = {
 
 MenuBar.defaultProps = {
     logo: scratchLogo,
-    onShare: () => {}
+    onShare: () => {},
+    showTutorials: true
 };
 
 const mapStateToProps = (state, ownProps) => {

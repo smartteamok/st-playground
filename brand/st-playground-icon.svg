@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ST-Playground">
+  <title>ST-Playground</title>
+  <rect width="512" height="512" rx="96" fill="#16324F"/>
+  <rect x="56" y="56" width="400" height="400" rx="72" fill="#1B6B93"/>
+  <rect x="112" y="112" width="288" height="288" rx="48" fill="#F4B942"/>
+  <polygon points="210,176 210,336 370,256" fill="#16324F"/>
+</svg>

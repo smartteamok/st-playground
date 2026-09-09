@@ -5,24 +5,7 @@ import {compose} from 'redux';
 import AppStateHOC from '../lib/app-state-hoc.jsx';
 import GUI from '../containers/gui.jsx';
 import HashParserHOC from '../lib/hash-parser-hoc.jsx';
-import log from '../lib/log.js';
 import {PLATFORM} from '../lib/platform.js';
-
-const onClickLogo = () => {
-    window.location = 'https://scratch.mit.edu';
-};
-
-const handleTelemetryModalCancel = () => {
-    log('User canceled telemetry modal');
-};
-
-const handleTelemetryModalOptIn = () => {
-    log('User opted into telemetry');
-};
-
-const handleTelemetryModalOptOut = () => {
-    log('User opted out of telemetry');
-};
 
 /*
  * Render the GUI playground. This is a separate function because importing anything
@@ -39,10 +22,6 @@ export default appTarget => {
         AppStateHOC,
         HashParserHOC
     )(GUI);
-
-    // TODO a hack for testing the backpack, allow backpack host to be set by url param
-    const backpackHostMatches = window.location.href.match(/[?&]backpack_host=([^&]*)&?/);
-    const backpackHost = backpackHostMatches ? backpackHostMatches[1] : null;
 
     const scratchDesktopMatches = window.location.href.match(/[?&]isScratchDesktop=([^&]+)/);
     let simulateScratchDesktop;
@@ -65,24 +44,15 @@ export default appTarget => {
     const root = ReactDomClient.createRoot(appTarget);
 
     root.render(
-        // important: this is checking whether `simulateScratchDesktop` is truthy, not just defined!
-        simulateScratchDesktop ?
-            <WrappedGui
-                canEditTitle
-                platform={PLATFORM.DESKTOP}
-                showTelemetryModal
-                canSave={false}
-                onTelemetryModalCancel={handleTelemetryModalCancel}
-                onTelemetryModalOptIn={handleTelemetryModalOptIn}
-                onTelemetryModalOptOut={handleTelemetryModalOptOut}
-            /> :
-            <WrappedGui
-                canEditTitle
-                backpackVisible
-                showComingSoon
-                backpackHost={backpackHost}
-                canSave={false}
-                onClickLogo={onClickLogo}
-            />
+        <WrappedGui
+            canEditTitle
+            canRemix={false}
+            canSave={false}
+            canShare={false}
+            enableCommunity={false}
+            backpackVisible={false}
+            showTutorials={false}
+            platform={simulateScratchDesktop ? PLATFORM.DESKTOP : undefined}
+        />
     );
 };

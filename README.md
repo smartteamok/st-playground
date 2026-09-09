@@ -25,7 +25,7 @@ como remote `upstream`; las actualizaciones entran por merge de tags.
 |---|---|---|
 | 0 | Decisiones y toolchain | completada |
 | 1 | Traer upstream y build verde | completada (v15.1.1) |
-| 2 | Rebranding y limpieza | planificada, lista para ejecutar |
+| 2 | Rebranding y limpieza | completada |
 | 3 | Assets propios y self-hosting | pendiente |
 | 4 | Desktop offline | pendiente |
 | 5 | Web + LTI 1.3 | condicional a la validación de la fase 4 |
@@ -60,8 +60,14 @@ Verificación de la GUI:
 
 ```bash
 cd packages/scratch-gui
-npm run test:unit      # 50 suites, 328 tests
+npm run test:unit      # 50 suites
 npm run build:dist     # dist/scratch-gui.js + dist/types/
+```
+
+Con el playground en marcha:
+
+```bash
+node scripts/check-branding.mjs
 ```
 
 Tiempos medidos en la fase 1 (4 CPUs, 15 GB RAM, Node 24.20.0):
