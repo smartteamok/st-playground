@@ -6,11 +6,12 @@ not conflict.
 
 | File | Used as |
 |---|---|
-| `st-playground-logo.svg` | Menu bar wordmark (`scratch-logo.svg` and the four time-travel variants) |
-| `st-playground-logo-compact.svg` | Compact / Android wordmark (`scratch-logo-android.svg`) |
-| `st-playground-icon.svg` | Isotype |
-| `st-playground-icon-512.png` | Installer icon (phase 4) and source for the favicon |
-| `favicon.ico` | Playground favicon |
+| `st-playground-logo.svg` | Menu bar wordmark (`scratch-logo.svg` and the four time-travel variants). Official Smart TEAM mark. |
+| `st-playground-logo-compact.svg` | Compact / Android wordmark: the violet **S** block (`scratch-logo-android.svg`) |
+| `st-playground-icon.svg` | Isotype (same S block) |
+| `st-playground-icon-512.png` | Installer icon and source for the `.ico` |
+| `favicon/` | Smart TEAM tab icons (violet, cyan, amber, green, coral) plus the cycle script |
+| `favicon.ico` | Playground shortcut icon (violet S) |
 | `sprite-default-a.svg` / `sprite-default-b.svg` | Default project costumes (copied under their MD5 names) |
 | `sprite-blip.wav` | Default sprite sound (copied under its MD5 name) |
 | `cat-ears-replacement.svg` | Avatar badge frame (`cat-ears.svg`) |

@@ -27,9 +27,10 @@
 }
 
 .embed-scratch-logo img {
-    height:  1.6rem;
+    height: 2.45rem;
+    width: auto;
     vertical-align: middle;
-    opacity: .6;
+    opacity: .9;
 }
 
 .stage-size-row {

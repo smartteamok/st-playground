@@ -45,10 +45,10 @@ apropiación de marca.
 
 ## Assets propios
 
-Los archivos de [`brand/`](./brand) (logo, isotipo, favicon, sprite por
-defecto y su sonido) son originales de ST-Playground y se publican bajo
-**CC BY-SA 4.0**, para que quien forkee este repositorio pueda reemplazarlos
-o reutilizarlos sin fricción.
+El wordmark y los favicons de [`brand/`](./brand) son de **Smart TEAM**.
+El sprite por defecto y su sonido son originales de ST-Playground y se
+publican bajo **CC BY-SA 4.0**, para que quien forkee este repositorio
+pueda reemplazarlos o reutilizarlos sin fricción.
 
 ## Fuentes tipográficas
 
