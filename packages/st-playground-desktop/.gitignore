@@ -1,0 +1,8 @@
+# Logs and webpack
+*.log
+.eslintcache
+
+# Build output
+/dist
+/release
+/test-results

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' app: http://127.0.0.1:* http://localhost:*; script-src 'self' app: 'unsafe-inline' http://127.0.0.1:* http://localhost:*; style-src 'self' app: 'unsafe-inline'; img-src 'self' app: data:;">
+    <title>Acerca de ST-Playground</title>
+    <link rel="stylesheet" href="about.css">
+</head>
+<body>
+    <div class="about-box">
+        <img class="logo" src="icon.svg" alt="ST-Playground">
+        <h1>ST-Playground</h1>
+        <p class="version">Versión <span id="version">—</span></p>
+        <table class="details">
+            <tbody>
+                <tr><td>Electron</td><td id="electron">—</td></tr>
+                <tr><td>Chrome</td><td id="chrome">—</td></tr>
+            </tbody>
+        </table>
+        <p class="license">Licencia AGPL-3.0-only. Fork de Scratch Editor, sin aval de la Scratch Foundation.</p>
+        <pre id="credits" class="credits">Cargando créditos…</pre>
+    </div>
+    <script>
+        const params = new URLSearchParams(location.search);
+        const setText = (id, value) => {
+            const node = document.getElementById(id);
+            if (node && value) node.textContent = value;
+        };
+        setText('version', params.get('version'));
+        setText('electron', params.get('electron'));
+        setText('chrome', params.get('chrome'));
+        fetch('CREDITS.md')
+            .then(response => response.ok ? response.text() : Promise.reject(response.status))
+            .then(text => {
+                document.getElementById('credits').textContent = text;
+            })
+            .catch(() => {
+                document.getElementById('credits').textContent =
+                    'No se pudieron cargar los créditos. Ver CREDITS.md en el repositorio.';
+            });
+    </script>
+</body>
+</html>

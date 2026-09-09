@@ -1,0 +1,58 @@
+appId: org.st-playground.desktop
+productName: ST-Playground
+copyright: AGPL-3.0-only
+artifactName: "${productName}-${version}-${os}-${arch}.${ext}"
+compression: normal
+asar: true
+asarUnpack:
+  - dist/renderer/**
+  - chrome-sandbox
+directories:
+  buildResources: buildResources
+  output: release
+files:
+  - dist/main/**
+  - dist/preload/**
+  - dist/renderer/**
+  - package.json
+  - "!**/*.map"
+  - "!dist/renderer/static/library-assets/**"
+extraResources:
+  - from: ../../assets/library
+    to: library-assets
+    filter:
+      - "**/*"
+extraMetadata:
+  main: dist/main/main.js
+publish: []
+fileAssociations:
+  - ext: sb3
+    name: ST-Playground Project
+    description: Proyecto de ST-Playground
+    mimeType: application/x.scratch.sb3
+    role: Editor
+win:
+  icon: buildResources/icon.ico
+  signAndEditExecutable: false
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: true
+  allowElevation: true
+  allowToChangeInstallationDirectory: false
+  shortcutName: ST-Playground
+  uninstallDisplayName: ST-Playground
+  artifactName: "${productName}-${version}-${arch}-Setup.${ext}"
+linux:
+  target:
+    - AppImage
+  executableName: st-playground
+  category: Education
+  icon: buildResources/icon.png
+  artifactName: "${productName}-${version}-${arch}.${ext}"

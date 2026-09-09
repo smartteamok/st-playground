@@ -223,17 +223,47 @@ En web se muestran las 12. El filtro es en tiempo de ejecución, sobre
 
 ## D-11. Targets de instalador
 
-Estado: abierta. Bloquea: fase 4.
+Estado: decidida.
 
-Confirmar sistema operativo y versión del parque de las escuelas. Supuesto de
-trabajo: Windows 10/11 x64, instalador NSIS con soporte de instalación
-silenciosa (`/S`). Linux AppImage solo si hay escuelas con Linux.
+Windows 10/11 x64. Entregables: instalador NSIS con `/S` (per-machine, para
+que el técnico lo meta en la imagen de disco) y ZIP portable (pendrive, sin
+administrador). Linux AppImage se genera como target de verificación, porque
+es lo único ejecutable en las VMs de desarrollo; no se reparte a las
+escuelas.
+
+Detalle en `packages/st-playground-desktop/electron-builder.yml` y
+[`docs/instalacion-escuela.md`](./docs/instalacion-escuela.md).
 
 ## D-12. Firma de código
 
-Estado: abierta. Bloquea: nada (fase 4 sale sin firma).
+Estado: decidida.
 
-Sin certificado, Windows muestra la advertencia de SmartScreen en la primera
-ejecución. Aceptable para instalación por el administrador en una imagen de
-disco. Si el instalador lo van a bajar docentes por su cuenta, hay que
-comprar un certificado EV o usar Azure Trusted Signing.
+Sin firma. El instalador lo despliega el técnico, no lo baja un docente, así
+que la advertencia de SmartScreen no es el camino habitual. Si más adelante
+el instalador se publica para descarga directa, hay que comprar un
+certificado EV o usar Azure Trusted Signing. Hasta entonces
+`signAndEditExecutable: false`.
+
+## D-20. El escritorio sirve la GUI por `app://`, no por `file://`
+
+Estado: decidida.
+
+Chromium bloquea `fetch()` a URLs `file://`. `STPlaygroundStorage` resuelve
+los medios con `fetch`, y `scratch-storage` lo hace desde un web worker:
+cargar `index.html` con `file://` deja la biblioteca entera con miniaturas
+vacías y cero errores en consola, el mismo cuadro de la fase 3.
+
+El proceso main registra un esquema privilegiado `app://` (`standard`,
+`secure`, `supportFetchAPI`, `stream`) y sirve `dist/renderer` más
+`extraResources/library-assets`. `document.baseURI` pasa a ser
+`app://editor/index.html`, las URLs de la biblioteca quedan en
+`app://editor/static/library-assets/…` y `fetch` funciona. El renderer es
+idéntico al de la web: no hay helper de `fs`, no se toca
+`st-playground-storage.ts`.
+
+Guardar un `.sb3` no usa IPC. El VM marca el zip como
+`application/x.scratch.sb3` y la GUI lo descarga con un `<a download>` sobre
+un `blob:`. El main intercepta `session.will-download`, muestra el diálogo
+nativo y mueve el archivo. Eso permite `sandbox: true`,
+`contextIsolation: true` y `nodeIntegration: false`, que `scratch-desktop`
+de upstream no tiene.

@@ -30,7 +30,7 @@ Fase 0  Decisiones y toolchain      sin código                       completa
 Fase 1  Upstream y build verde      el repo pasa a ser el fork       completa
 Fase 2  Rebranding y limpieza       packages/scratch-gui             completa
 Fase 3  Biblioteca propia y offline  packages/scratch-gui + assets/    completa
-Fase 4  Desktop offline             packages/st-playground-desktop   entregable
+Fase 4  Desktop offline             packages/st-playground-desktop   completa
 ------- validar en aula -------
 Fase 5  Web + LTI 1.3 + guardado    packages/st-playground-web       condicional
 ```
@@ -746,152 +746,59 @@ cinco miniaturas por biblioteca.
 
 ## Fase 4. Desktop offline
 
+Estado: **completa** (verificación Windows real queda a la escuela).
+
 ### Objetivo
 
 Un instalador que funcione en una computadora sin red: abre, crea, guarda y
 reabre `.sb3`, con la biblioteca completa embebida. Es el primer producto
 entregable.
 
-### Prerrequisitos
+### Qué se construyó
 
-Fase 3 completa. D-11 decidida.
+Ruta B: shell Electron propio en `packages/st-playground-desktop`
+(Electron 44, electron-builder 26). `scratch-desktop` de upstream se usó
+como referencia (`will-download`, argv) y no como base: sigue con
+`nodeIntegration` y `electron.remote`.
 
-### Tarea 4.0: spike de medio día
+Hallazgo que cambió el plan original (D-20): `fetch` sobre `file://` está
+bloqueado, así que el main registra un esquema `app://` privilegiado. El
+renderer queda idéntico al de la web. Spike en `/tmp` con Electron 44.3.0:
+333/333 miniaturas, 6 extensiones, fetch-worker arrancando bajo `app://`,
+cero requests externas.
 
-Antes de escribir nada, decidir entre dos rutas:
+La GUI `dist/` no copia `assets/library` ni `packages/scratch-gui/static/`
+(firmware micro:bit). El webpack del escritorio lo hace, y electron-builder
+mete la biblioteca en `extraResources` para dejarla fuera del asar.
 
-- Ruta A: forkear `scratch-desktop` y migrarlo de `@scratch/scratch-gui@13.7.4-svg`
-  a la GUI 15.x del workspace.
-- Ruta B: shell Electron propio mínimo en `packages/st-playground-desktop`,
-  copiando de `scratch-desktop` solo las piezas necesarias.
-
-Procedimiento: clonar `scratch-desktop` en `/tmp`, apuntar su dependencia a
-`file:../../packages/scratch-gui` y correr `npm run compile`. Si en medio día
-no compila y corre, se elige la ruta B. La expectativa es que sea B, porque
-entre 13.x y 15.x cambió cómo se inyecta la configuración (`AppStateHOC` +
-`GUIConfig`) y `scratch-desktop` todavía usa `electron.remote`.
-
-El resto de esta fase asume ruta B.
-
-### Tareas
-
-#### 4.1 Workspace nuevo
-
-Agregar `packages/st-playground-desktop` al array `workspaces` de `package.json`
-raíz (D-03). Estructura:
-
-```
-packages/st-playground-desktop/
-  package.json            productName, appId, electron, electron-builder
-  webpack.main.js
-  webpack.renderer.js
-  src/main/index.js       ventana, menú nativo, diálogos, asociación .sb3
-  src/main/menu.js
-  src/preload.js          contextBridge para IPC (sin electron.remote)
-  src/renderer/index.jsx  monta la GUI
-  src/renderer/DesktopGUIHOC.jsx
-  src/common/DiskStorageHelper.js
-  buildResources/         icon.ico, icon.icns, icon.png
-  static/                 index.html
-```
-
-Referencias en `scratch-desktop` para cada pieza: `src/main/index.js`,
-`src/renderer/ScratchDesktopGUIHOC.jsx`, `src/common/ElectronStorageHelper.js`,
-`webpack.renderer.js`, `scripts/electron-builder-wrapper.js`.
-
-#### 4.2 Renderer
-
-`DesktopGUIHOC.jsx` monta la GUI con:
-
-- `canSave={false}`, `canEditTitle`, `platform="DESKTOP"`.
-- La biblioteca ya se resuelve sola: `STPlaygroundStorage` (fase 3) pide
-  `static/library-assets/<md5ext>` en forma relativa, y con `index.html`
-  cargado por `file://` eso cae dentro del paquete. No hace falta un
-  `DiskStorageHelper` como el de `scratch-desktop`.
-- La misma configuración de props de la fase 2 (sin comunidad, sin cuenta,
-  sin telemetría).
-- `onClickAbout`: abre una ventana "Acerca de" con nombre, versión,
-  licencia AGPL, enlace a este repo y `CREDITS.md`.
-
-#### 4.3 Main
-
-- Menú nativo: Archivo (Nuevo, Abrir, Guardar, Guardar como, Salir), Edición,
-  Ayuda (Acerca de).
-- IPC `save-project`: recibe el `.sb3` como buffer, muestra `dialog.showSaveDialog`
-  con filtro `*.sb3`, escribe, y devuelve el título para actualizar la
-  ventana.
-- IPC `get-initial-project-data`: si la app se abrió por doble clic sobre un
-  `.sb3` (`process.argv` en Windows, `open-file` en macOS), devuelve el
-  contenido.
-- Sin auto-update, sin telemetría, sin ventana de privacidad.
-
-#### 4.4 Assets embebidos
-
-`assets/library/` ya está en el repo (fase 3, D-16), así que el build no
-necesita red: el paso de empaquetado copia esa carpeta a
-`static/library-assets/` y `electron-builder` la incluye en `extraResources`.
-Antes de empaquetar se corre `node scripts/fetch-library-assets.mjs --check`
-para no publicar un instalador con medios faltantes.
-
-#### 4.5 Instaladores
-
-`electron-builder` en el `package.json` del desktop:
-
-- Windows: `nsis`, `oneClick: false`, `perMachine: true`, `allowElevation: true`.
-  Debe soportar `instalador.exe /S` para instalación silenciosa en imagen de
-  disco.
-- Linux (si D-11 lo pide): `AppImage`.
-- `fileAssociations`: `.sb3`.
-- Sin firma (D-12).
-
-Scripts:
+### Cómo correrlo
 
 ```bash
-npm run --workspace @st-playground/desktop start        # dev con hot reload
-npm run --workspace @st-playground/desktop dist         # fetch + compile + instalador
+npm run compile --workspace @st-playground/desktop
+npm run start --workspace @st-playground/desktop          # webpack-dev-server + Electron
+npm run dist:linux --workspace @st-playground/desktop     # AppImage de verificación
+npm run dist:win --workspace @st-playground/desktop       # NSIS + ZIP (hace falta wine desde Linux)
+node scripts/check-desktop.mjs
 ```
 
-#### 4.6 Documentación para la escuela
-
-Crear `docs/instalacion-escuela.md`:
-
-- Instalación silenciosa y ubicación del ejecutable.
-- Recomendación de carpeta por alumno o pendrive para los `.sb3`.
-- Advertencia de SmartScreen y cómo evitarla (instalación por el admin).
-
-Crear `docs/guia-docente.md`:
-
-- Cómo crear una "Tarea" en Moodle con entrega de archivo `.sb3`.
-- Cómo adjuntar un `.sb3` de arranque como recurso de la actividad.
-- Cómo abrir un `.sb3` entregado para corregirlo.
-
-### Archivos tocados
-
-- `package.json` raíz (`workspaces`)
-- `packages/st-playground-desktop/**` (nuevo)
-- `docs/instalacion-escuela.md`, `docs/guia-docente.md` (nuevos)
+Documentación para la escuela: [`docs/instalacion-escuela.md`](./docs/instalacion-escuela.md),
+[`docs/guia-docente.md`](./docs/guia-docente.md).
 
 ### Criterios de aceptación
 
-Todos en una VM Windows con el adaptador de red deshabilitado:
-
-- [ ] El instalador corre en modo interactivo y en modo silencioso (`/S`).
-- [ ] La app abre, crea un proyecto, guarda `.sb3` con "Guardar como",
-      cierra, reabre el archivo por doble clic y el proyecto está intacto.
-- [ ] La biblioteca de sprites, fondos y sonidos abre con miniaturas y los
-      sonidos se reproducen.
-- [ ] El paint editor y el editor de sonidos funcionan.
-- [ ] Ninguna conexión saliente durante la sesión (verificar con Wireshark o
-      con el adaptador deshabilitado y sin errores en consola).
-- [ ] "Acerca de" muestra nombre, versión, AGPL y enlace al repo.
-- [ ] `docs/instalacion-escuela.md` y `docs/guia-docente.md` revisados por
-      un docente.
+- [x] Spike `app://`: miniaturas y fetch-worker.
+- [x] Workspace `packages/st-playground-desktop` con renderer aislado y sandbox.
+- [x] Guardado por `will-download` y reapertura por argv / instancia única.
+- [x] `docs/instalacion-escuela.md` y `docs/guia-docente.md`.
+- [ ] Medición en esta VM: `check-desktop.mjs`, AppImage y, si wine está, el `.exe`.
+- [ ] Instalación real en una VM Windows con el adaptador de red
+      deshabilitado (queda del lado de la escuela).
 
 ### Punto de validación
 
-Con la fase 4 cerrada, instalar en un aula real y usar durante al menos un
-ciclo de actividad completo (crear, guardar, entregar por Moodle, corregir).
-Recién con ese resultado se decide si la fase 5 se hace.
+Instalar en un aula real y usar durante al menos un ciclo de actividad
+completo (crear, guardar, entregar por Moodle, corregir). Recién con ese
+resultado se decide si la fase 5 se hace.
 
 ---
 

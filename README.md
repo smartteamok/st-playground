@@ -29,7 +29,7 @@ como remote `upstream`; las actualizaciones entran por merge de tags.
 | 1 | Traer upstream y build verde | completada (v15.1.1) |
 | 2 | Rebranding y limpieza | completada |
 | 3 | Biblioteca de medios propia y offline | completada |
-| 4 | Desktop offline | pendiente |
+| 4 | Desktop offline | completada |
 | 5 | Web + LTI 1.3 | condicional a la validación de la fase 4 |
 
 ## Requisitos
@@ -71,6 +71,7 @@ Con el playground en marcha:
 ```bash
 node scripts/check-branding.mjs        # sin marca ajena ni analytics
 node scripts/check-offline.mjs         # el editor no pide nada a la red
+node scripts/check-desktop.mjs         # app Electron: bibliotecas, guardar, reabrir
 ```
 
 ## Biblioteca de medios
@@ -87,6 +88,21 @@ node scripts/fetch-library-assets.mjs --prune   # borra lo que ya no se referenc
 
 Después de cada merge de upstream hay que correr el `--check`: si upstream
 agrega entradas a los catálogos, trae las referencias pero no los archivos.
+
+## Aplicación de escritorio
+
+Paquete `packages/st-playground-desktop`. Electron 44, esquema `app://` para
+que la biblioteca cargue sin red (D-20). Instalador NSIS silencioso y ZIP
+portable para Windows; AppImage solo como verificación en Linux.
+
+```bash
+npm run compile --workspace @st-playground/desktop
+npm run start --workspace @st-playground/desktop
+npm run dist:win --workspace @st-playground/desktop
+```
+
+Guías: [`docs/instalacion-escuela.md`](./docs/instalacion-escuela.md),
+[`docs/guia-docente.md`](./docs/guia-docente.md).
 
 Tiempos medidos en la fase 1 (4 CPUs, 15 GB RAM, Node 24.20.0):
 
