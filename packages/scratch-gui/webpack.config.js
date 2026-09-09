@@ -214,6 +214,15 @@ const buildConfig = baseConfig.clone()
                 to: 'static'
             },
             {
+                // ST-Playground serves the media library from the repo instead of
+                // the Scratch asset service. `STPlaygroundStorage` looks for it
+                // here. Deliberately not part of `distConfig`: each host
+                // application copies the library itself.
+                from: '../../assets/library',
+                to: 'static/library-assets',
+                noErrorOnMissing: true
+            },
+            {
                 from: 'extensions/**',
                 to: 'static',
                 context: 'src/examples'
