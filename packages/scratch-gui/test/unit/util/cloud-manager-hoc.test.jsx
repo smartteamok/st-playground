@@ -21,6 +21,19 @@ jest.mock('../../../src/lib/cloud-provider', () =>
 
 import cloudManagerHOC from '../../../src/lib/cloud-manager-hoc.jsx';
 
+// ST-Playground's storage ships no cloud variables (D-17), so this suite, which
+// exercises the untouched upstream HOC, supplies that capability itself.
+const cloudConfig = {
+    storage: {
+        scratchStorage: legacyConfig.storage.scratchStorage,
+        saveProject: () => Promise.reject(new Error('not used by this suite')),
+        cloudVariables: {
+            createProvider: (cloudHost, vm, username, projectId) =>
+                new CloudProvider(cloudHost, vm, username, projectId)
+        }
+    }
+};
+
 describe('CloudManagerHOC', () => {
     const mockStore = configureStore();
     let store;
@@ -30,7 +43,7 @@ describe('CloudManagerHOC', () => {
     beforeEach(() => {
         store = mockStore({
             scratchGui: {
-                config: legacyConfig,
+                config: cloudConfig,
                 projectState: {
                     projectId: '1234',
                     loadingState: LoadingState.SHOWING_WITH_ID
@@ -42,7 +55,7 @@ describe('CloudManagerHOC', () => {
         });
         stillLoadingStore = mockStore({
             scratchGui: {
-                config: legacyConfig,
+                config: cloudConfig,
                 projectState: {
                     projectId: '1234',
                     loadingState: LoadingState.LOADING_WITH_ID
