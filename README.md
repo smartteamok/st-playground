@@ -30,7 +30,8 @@ como remote `upstream`; las actualizaciones entran por merge de tags.
 | 2 | Rebranding y limpieza | completada |
 | 3 | Biblioteca de medios propia y offline | completada |
 | 4 | Desktop offline | completada |
-| 5 | Web + LTI 1.3 | condicional a la validación de la fase 4 |
+| 5 | Actividades de aula (20 `.sb3` + links) | siguiente |
+| 6 | Web + LTI 1.3 | condicional a la validación en aula |
 
 ## Requisitos
 

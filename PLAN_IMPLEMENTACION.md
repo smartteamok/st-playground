@@ -31,12 +31,14 @@ Fase 1  Upstream y build verde      el repo pasa a ser el fork       completa
 Fase 2  Rebranding y limpieza       packages/scratch-gui             completa
 Fase 3  Biblioteca propia y offline  packages/scratch-gui + assets/    completa
 Fase 4  Desktop offline             packages/st-playground-desktop   completa
+Fase 5  Actividades de aula         actividades/ + links             siguiente
 ------- validar en aula -------
-Fase 5  Web + LTI 1.3 + guardado    packages/st-playground-web       condicional
+Fase 6  Web + LTI 1.3 + guardado    packages/st-playground-web       condicional
 ```
 
-Las fases 0 a 4 producen algo instalable en una escuela sin red. La fase 5
-introduce el único backend del proyecto y se decide después de validar.
+Las fases 0 a 5 producen algo instalable en una escuela sin red, con los 20
+proyectos de arranque de los libros 5 a 8. La fase 6 introduce el único
+backend del proyecto y se decide después de validar.
 
 ---
 
@@ -594,7 +596,7 @@ export class STPlaygroundStorage implements GUIStorage {
   `gui.jsx:712` calcula `backpackConfigured` a partir de
   `config.storage?.backpackStorage`, así que la mochila queda oculta sola y
   el `backpackVisible={false}` del punto de montaje pasa a ser redundante.
-- `libraryAssetBase` es parámetro del constructor para que la fase 5 pueda
+- `libraryAssetBase` es parámetro del constructor para que la fase 6 pueda
   pasar una ruta absoluta cuando el editor viva en una URL anidada.
 
 `src/legacy-config.ts` pasa a instanciar `STPlaygroundStorage`. Es el único
@@ -799,12 +801,153 @@ Documentación para la escuela: [`docs/instalacion-escuela.md`](./docs/instalaci
 ### Punto de validación
 
 Instalar en un aula real y usar durante al menos un ciclo de actividad
-completo (crear, guardar, entregar por Moodle, corregir). Recién con ese
-resultado se decide si la fase 5 se hace.
+completo (crear, guardar, entregar por Moodle, corregir). En paralelo se
+puede implementar la fase 5 (actividades de aula) porque no depende de esa
+validación: son archivos locales y un query string.
 
 ---
 
-## Fase 5. Web + LTI 1.3 + guardado en servidor
+## Fase 5. Actividades de aula
+
+### Objetivo
+
+Los 20 proyectos de arranque de los libros 5 a 8 viven en el repo. Un link
+abre el editor **con ese proyecto ya cargado**. Sirve para armar la clase
+en Moodle (recurso URL o consigna con hipervínculo) y, sin red, para el
+menú Actividades de la app de escritorio.
+
+### Prerrequisitos
+
+Fase 4 completa. Los 20 `.sb3` los aporta el equipo docente; hasta que
+lleguen se puede desarrollar el cargador con un `.sb3` de prueba generado
+en ST-Playground.
+
+### Convención (D-21)
+
+| Campo | Valor |
+|---|---|
+| Libros | 5, 6, 7, 8 |
+| Proyectos por libro | 1 a 5 |
+| Id | `{libro}.{numero}` → `5.1` … `8.5` |
+| URL | `?actividad=5.1` |
+| Archivo | `actividades/libro-05/01.sb3` |
+
+```
+actividades/
+  catalogo.json              id, libro, numero, titulo, archivo
+  README.md
+  libro-05/01.sb3 … 05.sb3
+  libro-06/01.sb3 … 05.sb3
+  libro-07/01.sb3 … 05.sb3
+  libro-08/01.sb3 … 05.sb3
+```
+
+`catalogo.json` es la fuente de títulos y de la lista del menú. Un script
+`scripts/check-actividades.mjs` verifica que los 20 ids estén, que cada
+archivo exista y que sea un zip con `project.json`.
+
+No se usa `#id` (el hash de Scratch). No se toca `HashParserHOC`.
+
+### Tareas
+
+#### 5.1 Repo y catálogo
+
+Crear `actividades/` con el JSON y, cuando estén, los 20 `.sb3`. Hasta
+entonces, un único `actividades/_fixture.sb3` para desarrollar y tests.
+Los títulos reales se cargan en el catálogo; mientras tanto el título
+puede ser `Libro {n} · Proyecto {k}`.
+
+#### 5.2 Cargador en el playground web
+
+Archivo nuevo `packages/scratch-gui/src/lib/st-playground-actividad.js`
+(D-05: archivo propio, no un HOC de upstream). Lee `?actividad=`, busca en
+el catálogo, hace `fetch('actividades/<archivo>')` y llama a
+`vm.loadProject` con el mismo baile de redux que `DesktopGUIHOC`
+(`requestProjectUpload` → `loadProject` → `onLoadedProject`). Si el id no
+existe o el archivo no abre, diálogo de error y proyecto por defecto.
+
+Punto de montaje: `render-gui.jsx` y `render-gui-standalone.jsx`, como
+prop o efecto al lado de las props de la fase 2. Webpack del playground
+copia `actividades/` a `build/actividades/` (mismo patrón que
+`library-assets`).
+
+Links de ejemplo, con el playground en `http://<ip>:8601/`:
+
+```
+http://<ip>:8601/?actividad=5.1
+http://<ip>:8601/?actividad=6.3
+http://<ip>:8601/?actividad=8.5
+```
+
+En Moodle: Recurso → URL, o un hipervínculo en la consigna de la Tarea.
+El alumno cae al editor con la consigna ya armada, trabaja, y entrega su
+copia por la Tarea de archivo (fase 4).
+
+#### 5.3 Escritorio
+
+Los mismos archivos van en `extraResources/actividades` (junto a
+`library-assets`). El main sirve `app://editor/actividades/…`.
+
+- Si la URL de la ventana trae `?actividad=5.1` (o el protocolo
+  `st-playground://actividad/5.1`), el renderer carga ese `.sb3`.
+- Menú **Actividades** en la barra de la GUI (`onClickAbout` ya es un
+  menú; el de actividades es otro, pasado por props desde
+  `DesktopGUIHOC`, sin editar `menu-bar.jsx` si se puede colgar de un
+  botón existente; si hace falta un ítem, se justifica por D-05).
+- `app.setAsDefaultProtocolClient('st-playground')` para que un link
+  `st-playground://actividad/5.1` en Moodle abra la app instalada. En
+  el ZIP portable el protocolo no queda registrado: ahí vale el menú.
+
+Guardar sigue siendo "Guardar en tu computadora" a otra ruta. Nunca se
+pisa el arranque embebido.
+
+#### 5.4 Documentación
+
+Actualizar `docs/guia-docente.md`: tabla de los 20 links, cómo pegarlos
+en Moodle, y cómo abrirlos desde el menú si no hay red. Una línea en
+`docs/instalacion-escuela.md` sobre el protocolo `st-playground://`.
+
+### Archivos tocados
+
+- `actividades/**` (nuevo)
+- `packages/scratch-gui/src/lib/st-playground-actividad.js` (nuevo)
+- `packages/scratch-gui/src/playground/render-gui.jsx` (punto de montaje)
+- `packages/scratch-gui/webpack.config.js` (copiar `actividades/`)
+- `packages/st-playground-desktop/**` (extraResources, menú, protocolo)
+- `scripts/check-actividades.mjs` (nuevo)
+- `docs/guia-docente.md`, `docs/instalacion-escuela.md`
+
+### Criterios de aceptación
+
+- [ ] `actividades/catalogo.json` lista 20 ids `5.1`–`8.5` y cada archivo
+      existe y abre como `.sb3`.
+- [ ] `http://127.0.0.1:8601/?actividad=5.1` abre el editor con ese
+      proyecto (título y sprites distintos del proyecto por defecto).
+- [ ] Un id inexistente (`?actividad=9.9`) no rompe el editor: aviso y
+      proyecto por defecto.
+- [ ] En escritorio, el menú Actividades muestra 20 entradas y cargar una
+      equivale al link. Cero requests a la red.
+- [ ] Guardar produce un `.sb3` nuevo; el arranque en `actividades/` no
+      cambia.
+- [ ] `docs/guia-docente.md` tiene la tabla de links para pegar en Moodle.
+- [ ] `check-actividades.mjs` y `check-desktop.mjs` verdes.
+
+### Qué queda afuera de esta fase
+
+- Autoguardado en servidor (fase 6).
+- Que el docente edite los arranques desde la UI: se editan en ST-Playground
+  y se pisan los `.sb3` del repo.
+- i18n de los títulos más allá de lo que traiga `catalogo.json`.
+
+### Punto de validación
+
+Con la fase 5 cerrada, una clase real usa un link de Moodle (o el menú
+offline) para arrancar, guarda, entrega. Recién con ese resultado se
+decide si la fase 6 (LTI) se hace.
+
+---
+
+## Fase 6. Web + LTI 1.3 + guardado en servidor
 
 ### Objetivo
 
@@ -814,12 +957,13 @@ proyecto.
 
 ### Prerrequisitos
 
-Fase 4 validada en aula y la validación indica que "Tarea + archivo" no
-alcanza. Un Moodle de pruebas (4.x) con permisos de administrador.
+Fase 5 (actividades de aula) y fase 4 validadas en aula, y la validación
+indica que "Tarea + archivo" no alcanza. Un Moodle de pruebas (4.x) con
+permisos de administrador.
 
 ### Tareas
 
-#### 5.1 Workspace `packages/st-playground-web`
+#### 6.1 Workspace `packages/st-playground-web`
 
 Servidor Node con:
 
@@ -837,14 +981,14 @@ Servidor Node con:
     rol vía claims del launch).
 - Sirve el bundle de la GUI (`packages/scratch-gui/dist/`).
 
-#### 5.2 Storage web
+#### 6.2 Storage web
 
 Completar `st-playground-storage.ts` (fase 3): `saveProject()` hace `PUT` al
 backend, `setProjectHost`/`setProjectToken` reciben host y token de sesión.
 `ProjectSaverHOC` de la GUI ya dispara el autosave; el punto de montaje web
 pasa `canSave`, `projectHost`, `projectToken` y `projectId`.
 
-#### 5.3 Moodle
+#### 6.3 Moodle
 
 - Registro de la herramienta con URL de registro dinámico.
 - Deep Linking: el docente elige "actividad con proyecto de arranque X" desde
@@ -852,7 +996,7 @@ pasa `canSave`, `projectHost`, `projectToken` y `projectId`.
 - NRPS: roster del curso para el listado del docente.
 - AGS (opcional): devolver "entregado" al libro de calificaciones.
 
-#### 5.4 Privacidad
+#### 6.4 Privacidad
 
 Se guarda únicamente el `sub` opaco del token LTI y el `context_id`. Ningún
 nombre, correo ni dato personal sale de Moodle. Documentarlo en
@@ -916,7 +1060,7 @@ que se violó D-05 en alguna fase; anotarlo en `DECISIONES.md`.
 
 ## Qué queda explícitamente afuera
 
-- Cuentas propias, registro o login: la identidad la da Moodle (fase 5) o no
+- Cuentas propias, registro o login: la identidad la da Moodle (fase 6) o no
   existe (fase 4).
 - Sincronización offline/online, colas de reintento, PWA.
 - Extensiones personalizadas del VM (D-04). Si hace falta, se abre una

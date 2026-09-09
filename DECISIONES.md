@@ -31,7 +31,7 @@ escritorio y el host web se agregan como workspaces:
 
 ```
 packages/st-playground-desktop
-packages/st-playground-web        (fase 5)
+packages/st-playground-web        (fase 6)
 ```
 
 Ventajas: no hay que publicar `@<scope>/scratch-gui` en ningún registry, la
@@ -66,8 +66,9 @@ Estado: decidida.
 
 El escenario mayoritario es escuela sin conectividad con computadoras
 compartidas. La app de escritorio (fase 4) va antes que el host web con LTI
-(fase 5). La fase 5 solo se ejecuta si, después de validar en aula, la
-entrega por "Tarea de Moodle + archivo `.sb3`" resulta insuficiente.
+(fase 6). La fase 6 solo se ejecuta si, después de validar en aula, la
+entrega por "Tarea de Moodle + archivo `.sb3`" resulta insuficiente. Las
+actividades de arranque (fase 5) no son backend: son 20 `.sb3` en el repo.
 
 ## D-07. Sin telemetría ni analytics
 
@@ -267,3 +268,30 @@ un `blob:`. El main intercepta `session.will-download`, muestra el diálogo
 nativo y mueve el archivo. Eso permite `sandbox: true`,
 `contextIsolation: true` y `nodeIntegration: false`, que `scratch-desktop`
 de upstream no tiene.
+
+## D-21. Las actividades de aula son 20 `.sb3` versionados, uno por link
+
+Estado: decidida. Bloquea: fase 5.
+
+Hay 4 libros (5, 6, 7 y 8) con 5 proyectos cada uno: 20 archivos `.sb3`.
+Viven en el repo (`actividades/`), se copian al desktop y al playground
+web, y cada uno tiene un identificador estable que cabe en una URL de
+Moodle.
+
+```
+?actividad=5.1     libro 5, proyecto 1
+?actividad=8.5     libro 8, proyecto 5
+```
+
+No se usa el `#12345` de upstream: ese hash es un id numérico del sitio de
+Scratch y chocaría con `HashParserHOC`. El query `actividad` se lee en el
+punto de montaje (D-05) y carga el `.sb3` con el mismo `vm.loadProject` que
+ya usa el escritorio para un archivo abierto por doble clic.
+
+El alumno **no guarda encima** del arranque: "Guardar en tu computadora"
+sigue pidiendo una ruta nueva. El `.sb3` del repo es la consigna, no el
+trabajo del chico.
+
+En un aula sin red el mismo catálogo aparece adentro de la app de
+escritorio (menú Actividades). El link HTTP sirve cuando hay servidor en
+la red local o cuando Moodle puede alcanzar el playground.
