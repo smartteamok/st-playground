@@ -1,4 +1,4 @@
-# Fork de Scratch para escuelas
+# ST-Playground
 
 Editor de programación por bloques basado en
 [`scratchfoundation/scratch-editor`](https://github.com/scratchfoundation/scratch-editor)
@@ -23,9 +23,9 @@ como remote `upstream`; las actualizaciones entran por merge de tags.
 
 | Fase | Descripción | Estado |
 |---|---|---|
-| 0 | Decisiones y toolchain | toolchain lista; decisiones D-08/D-09/D-10 abiertas |
+| 0 | Decisiones y toolchain | completada |
 | 1 | Traer upstream y build verde | completada (v15.1.1) |
-| 2 | Rebranding y limpieza | pendiente |
+| 2 | Rebranding y limpieza | planificada, lista para ejecutar |
 | 3 | Assets propios y self-hosting | pendiente |
 | 4 | Desktop offline | pendiente |
 | 5 | Web + LTI 1.3 | condicional a la validación de la fase 4 |

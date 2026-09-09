@@ -18,20 +18,21 @@ Versiones verificadas al escribir este plan (2026-09-09):
 | `scratch-blocks` | 2.1.19 | dependencia npm precompilada, no está en el monorepo |
 | `scratchfoundation/scratch-desktop` | 3.32.0 | Electron 42; pinea `@scratch/scratch-gui@13.7.4-svg` |
 
-Placeholder `<marca>`: nombre del producto, pendiente en D-08.
+Nombre del producto: **ST-Playground** (D-08). Scope de los workspaces
+propios: `@st-playground` (D-09).
 
 ---
 
 ## Mapa de fases
 
 ```
-Fase 0  Decisiones y toolchain           sin código
-Fase 1  Traer upstream y build verde     este repo pasa a ser el fork
-Fase 2  Rebranding y limpieza            packages/scratch-gui
-Fase 3  Assets propios y self-hosting    packages/scratch-gui + scripts
-Fase 4  Desktop offline                  packages/<marca>-desktop      <- producto entregable
+Fase 0  Decisiones y toolchain      sin código                       completa
+Fase 1  Upstream y build verde      el repo pasa a ser el fork       completa
+Fase 2  Rebranding y limpieza       packages/scratch-gui             siguiente
+Fase 3  Assets propios y self-host  packages/scratch-gui + scripts
+Fase 4  Desktop offline             packages/st-playground-desktop   entregable
 ------- validar en aula -------
-Fase 5  Web + LTI 1.3 + guardado         packages/<marca>-web          <- solo si hace falta
+Fase 5  Web + LTI 1.3 + guardado    packages/st-playground-web       condicional
 ```
 
 Las fases 0 a 4 producen algo instalable en una escuela sin red. La fase 5
@@ -48,9 +49,9 @@ alineado con upstream.
 
 ### Tareas
 
-1. Cerrar D-08 (nombre), D-09 (scope npm) y D-10 (URL del logo) en
-   `DECISIONES.md`.
-2. Reemplazar el placeholder `<marca>` en este plan.
+1. Cerrar D-08 (nombre), D-09 (scope npm) y D-10 (destino del clic en el
+   logo) en `DECISIONES.md`.
+2. Reemplazar el placeholder de marca en este plan.
 3. Instalar la toolchain:
 
 ```bash
@@ -65,9 +66,9 @@ node --version   # v24.20.0
 
 ### Criterios de aceptación
 
-- [ ] D-08, D-09 y D-10 en estado `decidida`.
-- [ ] `<marca>` no aparece más en este archivo.
-- [ ] `node --version` devuelve `v24.20.0`.
+- [x] D-08, D-09 y D-10 en estado `decidida`.
+- [x] El placeholder de marca no aparece más en este archivo.
+- [x] `node --version` devuelve `v24.20.0`.
 
 ---
 
@@ -170,110 +171,268 @@ respetando D-05 (mínima fricción con upstream).
 
 ### Prerrequisitos
 
-Fase 1 completa. D-08, D-09 y D-10 decididas. Logo en SVG (versión normal y
-compacta) e ícono en PNG 512x512 disponibles en `brand/` (carpeta nueva en la
-raíz, fuera de `packages/`).
+Fase 1 completa. Decisiones D-08 (`ST-Playground`), D-09
+(`@st-playground`), D-10 (logo no clickeable), D-13 (tutoriales fuera) y
+D-14 (i18n por alias) cerradas.
+
+### Inventario verificado
+
+Auditoría hecha sobre el árbol ya mergeado. Los números y líneas son reales,
+no estimaciones.
+
+| Qué | Dónde | Cantidad |
+|---|---|---|
+| SVG de logo y gato | `src/components/menu-bar/` | 7 archivos |
+| Assets del proyecto por defecto | `src/lib/default-project/` | 2 SVG de disfraz, 2 WAV, 1 SVG de fondo |
+| Archivos de tutoriales | `src/lib/libraries/decks/` | 1497 (30 mazos, 29 miniaturas, 1452 pasos) |
+| Mensajes i18n con "Scratch" | `scratch-l10n` vía `reducers/locales.js` | 12 claves |
+| `alt="Scratch"` en JSX | `menu-bar.jsx:337`, `stage-header.jsx:220` | 2 |
+| URLs `scratch.mit.edu` en `src/` | ver 2.6 | 14 |
+| Importadores de `analytics.js` | ver 2.5 | 6 archivos |
+| Títulos HTML con "Scratch" | `webpack.config.js:188,195,202,209,216` | 5 |
+
+Hallazgo relevante: `translations/en.json` no está en el repo, se genera con
+`npm run i18n:src`. Por eso los textos se pisan por alias (D-14) y no
+editando ese archivo.
 
 ### Tareas
 
-Ordenadas por la regla D-05: primero assets, luego props, al final JSX.
+Ordenadas por la regla D-05: primero assets nuevos, luego reemplazo de
+assets, luego configuración, y al final los tres cambios de JSX justificados.
 
-#### 2.1 Reemplazo de assets con el mismo nombre
+#### 2.1 Crear los assets de marca
 
-| Archivo en `packages/scratch-gui/` | Qué es | Acción |
+Carpeta nueva `brand/` en la raíz, fuera de `packages/`, como fuente de
+verdad. Desde ahí se copia a los destinos de la GUI y, en la fase 4, a los
+`buildResources/` del instalador.
+
+```
+brand/
+  st-playground-logo.svg          wordmark horizontal, ~110x40, para la barra de menú
+  st-playground-logo-compact.svg  variante corta para pantallas angostas
+  st-playground-icon.svg          isotipo cuadrado
+  st-playground-icon-512.png      derivado del isotipo, para instaladores y favicon
+  sprite-default-a.svg            disfraz 1 del sprite por defecto
+  sprite-default-b.svg            disfraz 2 (variante para animación)
+  README.md                       qué es cada archivo y cómo regenerar los derivados
+```
+
+El logo se crea como SVG escrito a mano (wordmark tipográfico), no como
+imagen rasterizada. Es reemplazable después sin tocar código: alcanza con
+sobrescribir el archivo en `brand/` y volver a copiar.
+
+El sprite por defecto reemplaza al gato. Tiene que ser reconocible a 96 px,
+con dos disfraces para que el bloque "siguiente disfraz" siga teniendo
+sentido en las primeras clases.
+
+#### 2.2 Reemplazo de assets con el mismo nombre
+
+Se conservan los nombres de archivo de upstream para que un merge futuro no
+genere conflicto: si upstream cambia su logo, el nuestro gana sin
+intervención.
+
+| Archivo en `packages/scratch-gui/` | Origen en `brand/` |
+|---|---|
+| `src/components/menu-bar/scratch-logo.svg` | `st-playground-logo.svg` |
+| `src/components/menu-bar/scratch-logo-android.svg` | `st-playground-logo-compact.svg` |
+| `src/components/menu-bar/cat_logo.svg` | `st-playground-logo.svg` |
+| `src/components/menu-bar/nineties_logo.svg` | `st-playground-logo.svg` |
+| `src/components/menu-bar/oldtimey-logo.svg` | `st-playground-logo.svg` |
+| `src/components/menu-bar/prehistoric-logo.svg` | `st-playground-logo.svg` |
+| `src/components/menu-bar/cat-ears.svg` | isotipo sin orejas de gato (fondo del badge de avatar, `user-avatar.css:21`) |
+| `static/favicon.ico` | derivado de `st-playground-icon-512.png` |
+
+Los cuatro logos alternativos son del easter egg de "viaje en el tiempo"
+(`menu-bar.jsx:228-238`, que pisa `#logo_img` por `getElementById`). Copiando
+el logo propio en los cuatro, el easter egg deja de mostrar marca ajena sin
+tocar esa lógica.
+
+#### 2.3 Proyecto por defecto
+
+Archivos: `src/lib/default-project/`. El sprite se llama `Sprite1` por
+i18n (`shared-messages.ts`), así que no hace falta tocar el nombre.
+
+Los assets son de contenido direccionable: el nombre del archivo es el MD5
+del contenido y aparece en tres lugares que tienen que coincidir.
+
+1. Calcular el MD5 de cada SVG nuevo (`md5sum`).
+2. Renombrar los archivos a `<md5>.svg`.
+3. `index.ts`: cambiar los `id` de los dos assets `ImageVector` de disfraz
+   (hoy `bcf454acf82e4504149f7ffe07081dbc` y
+   `0fb9be3e8397c983338cb71dc84d0b25`) y sus `import`.
+4. `project-data.ts`: cambiar `assetId`, `md5ext`, `rotationCenterX/Y` y el
+   `name` de cada disfraz.
+
+El sonido "Meow" (`83c36d806dc92327b9e7049a565c6bff.wav`) se reemplaza por
+un sonido neutro con el mismo procedimiento, o se quita del sprite dejando
+solo el "pop" del escenario.
+
+El watermark del escenario (`containers/watermark.jsx`) muestra el disfraz
+del sprite activo, así que se corrige solo al cambiar esto.
+
+#### 2.4 Textos de marca por alias de i18n (D-14)
+
+Archivo nuevo `src/lib/st-playground-messages.js`: importa
+`scratch-l10n/locales/editor-msgs` y devuelve una copia con las claves de
+marca pisadas en todos los idiomas.
+
+Claves a pisar (las 12 que contienen "Scratch"), en orden de visibilidad:
+
+| Clave | Valor actual | Prioridad |
 |---|---|---|
-| `src/components/menu-bar/scratch-logo.svg` | Logo de la barra de menú | Reemplazar por el propio |
-| `src/components/menu-bar/scratch-logo-android.svg` | Variante compacta | Reemplazar por el propio |
-| `src/components/menu-bar/nineties_logo.svg`, `cat_logo.svg`, `oldtimey-logo.svg`, `prehistoric-logo.svg` | Logos del easter egg "viaje en el tiempo" (`menu-bar.jsx` líneas 228-238) | Reemplazar por variantes propias, o copiar el logo principal en los cuatro |
-| `static/favicon.ico` | Favicon del playground | Reemplazar |
-| `src/lib/default-project/*.svg`, `*.wav` | Disfraces y sonidos del gato en el proyecto por defecto | Reemplazar por sprite propio; ajustar `src/lib/default-project/index.js` (nombres, md5, `rotationCenterX/Y`) |
+| `gui.gui.defaultProjectTitle` | "Scratch Project" | alta: se ve en el campo de título |
+| `gui.menuBar.joinScratch` | "Join Scratch" | media: desaparece con 2.5 |
+| `gui.alerts.lostPeripheralConnection` | "Scratch lost connection to..." | media: extensiones de hardware |
+| `gui.crashMessage.description` | "...Scratch has crashed... Scratch Team" | baja pero visible si algo falla |
+| `gui.webglModal.description` | "...needed for Scratch 3.0 to run." | baja |
+| `gui.unsupportedBrowser.*` (2) | "...Scratch does not support..." | baja |
+| `gui.connection.unavailable.installscratchlink` | "...Scratch Link..." | baja: dejar, es el nombre real del producto de Scratch que hay que instalar |
+| `gui.telemetryOptIn.*` (4) | varias | ninguna: el modal no se muestra (2.5) |
 
-#### 2.2 Configuración por props en el punto de montaje
+En `webpack.config.js`, agregar al `baseConfig`:
 
-El punto de montaje de desarrollo es `src/playground/render-gui.jsx`. Ahí se
-cambia:
-
-- `onClickLogo`: hoy navega a `https://scratch.mit.edu`. Apuntar a D-10 o
-  eliminar el handler (sin handler, el logo no es clickeable).
-- Quitar `showComingSoon` y `backpackVisible`.
-- Agregar `canShare={false}`, `enableCommunity={false}`, sin
-  `accountMenuOptions`.
-- `showTelemetryModal` no debe pasarse nunca.
-
-Desktop (fase 4) y web (fase 5) tienen su propio punto de montaje y repiten
-esta configuración.
-
-#### 2.3 Textos
-
-- `src/playground/index.ejs`: `<title>`.
-- `webpack.config.js`: los cinco `title: 'Scratch 3.0 GUI...'` de
-  `HtmlWebpackPlugin`.
-- Auditar strings visibles:
-
-```bash
-grep -n -i '"scratch' packages/scratch-gui/translations/en.json
+```js
+resolve: {
+    alias: {
+        'scratch-l10n/locales/editor-msgs':
+            path.resolve(__dirname, 'src/lib/st-playground-messages.js')
+    }
+}
 ```
 
-  Las que aparezcan en el flujo principal se pisan en el punto de montaje
-  pasando `messages` a `AppStateHOC`/`LocalizationHOC` (react-intl hace merge
-  de mensajes), no editando `scratch-l10n`. Las que solo aparecen en
-  tutoriales o en extensiones de hardware pueden quedar.
+El alias tiene que cubrir también los tests: `jest.moduleNameMapper` ya tiene
+una entrada `editor-msgs` que apunta a un mock, así que los tests no se ven
+afectados.
 
-#### 2.4 Telemetría y analytics (D-07)
+Además, textos que no pasan por i18n:
 
-- `webpack.config.js`: `DefinePlugin` inyecta `GA_ID` con default
-  `'UA-000000-01'` y `GTM_ID`. Fijar ambos a cadena vacía y `null`.
-- `src/lib/analytics.js`: neutralizar la inicialización de `react-ga`.
-- `src/playground/index.ejs`: quitar el snippet de Google Tag Manager
-  condicionado por `gtm_id`.
-- Confirmar que el modal de telemetría no se muestra (prop
-  `showTelemetryModal` ausente).
+- `src/playground/index.ejs`: `<title>` viene de webpack.
+- `webpack.config.js` líneas 188, 195, 202, 209, 216: los cinco títulos
+  `'Scratch 3.0 GUI...'` pasan a `ST-Playground`.
 
-#### 2.5 Único cambio de JSX aceptado
+#### 2.5 Comunidad, cuenta y telemetría por configuración
 
-- `src/components/menu-bar/menu-bar.jsx`, `<img id="logo_img" alt="Scratch">`
-  (alrededor de la línea 337): cambiar el `alt` al nombre del producto.
+El punto de montaje de desarrollo es `src/playground/render-gui.jsx`. Queda
+así (sacando `onClickLogo`, `showComingSoon` y `backpackVisible`):
 
-Cualquier otro cambio de JSX necesita justificación en el mensaje de commit.
-
-#### 2.6 Imágenes del gato fuera de la barra de menú
-
-Revisar y decidir por cada una:
-
-- `src/components/loader/`: animación de carga.
-- `src/lib/libraries/decks/`: tarjetas de tutoriales (muchas capturas con el
-  gato). Opción barata: deshabilitar la biblioteca de tutoriales desde props
-  hasta rehacerlas.
-- `src/components/gui/`, `src/components/stage-header/`: íconos varios.
-
-```bash
-grep -ril 'cat' packages/scratch-gui/src/components --include=*.svg --include=*.png -l
+```jsx
+<WrappedGui
+    canEditTitle
+    canSave={false}
+    canShare={false}
+    canRemix={false}
+    enableCommunity={false}
+    backpackVisible={false}
+/>
 ```
+
+Efecto por prop, con las líneas de `menu-bar.jsx` donde se decide:
+
+| Prop | Qué apaga | Línea |
+|---|---|---|
+| sin `showComingSoon` | "Compartir" y "Ver página del proyecto" deshabilitados, el falso usuario `scratch-cat` y el menú de cuenta simulado | 426-430, 452-456, 583-624 |
+| `enableCommunity={false}` | botón "Ver página del proyecto" | 435-456 |
+| `canShare={false}` | botón "Compartir" | 404-431 |
+| `canRemix={false}` | "Remix" en el menú Archivo y el botón inline | 357, 362, 432 |
+| sin `accountMenuOptions` | "Únete", "Iniciar sesión", "Mis cosas", avatar | 500-626 |
+| `backpackVisible={false}` | mochila (ya es el default en `gui.jsx:674`) | `gui.jsx:526-531` |
+| sin `showTelemetryModal` | modal de telemetría | `editor-state.tsx:97` |
+
+Telemetría y analytics (D-07):
+
+- `src/playground/index.ejs` líneas 4-12 y 21-24: quitar el snippet de Google
+  Tag Manager y el `noscript` con el iframe.
+- `webpack.config.js` líneas 12-22 y 75-79: quitar `gtm_id`, `gtm_env_auth`,
+  y las definiciones `GA_ID`, `GTM_ID`, `GTM_ENV_AUTH` del `DefinePlugin`.
+  `GA_ID` ya no se usa en `src/`.
+- `src/lib/analytics.js`: el objeto `GA4` empuja eventos a
+  `window.dataLayer`. Sin el snippet de GTM eso es inerte, pero se convierte
+  en no-op explícito para que no reviva si alguien agrega GTM. Los 6
+  importadores (`reducers/cards.js`, `lib/tutorial-from-url.js`,
+  `containers/tips-library.jsx`, `containers/connection-modal.jsx`,
+  `containers/blocks.jsx`, `components/debug-modal/debug-modal.jsx`) no
+  cambian.
+
+#### 2.6 Quitar tutoriales (D-13)
+
+- `src/lib/libraries/decks/index.jsx`: vaciar el catálogo de mazos.
+- Borrar `src/lib/libraries/decks/thumbnails/` (29 archivos) y
+  `src/lib/libraries/decks/steps/` (1452 archivos), más los `*.js` de pasos
+  por idioma que queden sin uso.
+- Ocultar el botón "Tutoriales" (`menu-bar.jsx:460-474`, sin prop que lo
+  controle: es el cambio de JSX número 3 de 2.7).
+- `decks/index.jsx:1664` y `:1675` tienen URLs a `scratch.mit.edu` y
+  `scratchfoundation.org` que desaparecen con el vaciado.
+
+Quedan sin tocar, por ser el nombre real de productos de terceros que el
+docente necesita identificar: las URLs de extensiones de hardware
+(`lib/libraries/extensions/index.jsx`, líneas 234, 278, 322, 368, 414) y
+`connection-modal/icons/scratchlink.svg`.
+
+#### 2.7 Los tres cambios de JSX justificados
+
+Cada uno va en su propio commit, explicando por qué no se pudo resolver por
+asset o por prop.
+
+1. `src/components/menu-bar/menu-bar.jsx:337`: `alt="Scratch"` está fijo en
+   el `<img id="logo_img">`. La prop `logo` existe (línea 673) pero la línea
+   342 la ignora y usa `getScratchLogo(this.props.platform)`. Solo se cambia
+   el `alt`.
+2. `src/components/stage-header/stage-header.jsx:214,220`: en modo pantalla
+   completa hay un logo con `alt="Scratch"` que enlaza a `scratch.mit.edu`.
+   Se cambia el `alt` y se saca el enlace.
+3. `src/components/menu-bar/menu-bar.jsx:460-474`: el botón "Tutoriales" no
+   tiene prop que lo controle. Se envuelve en una condición sobre una prop
+   nueva con default que preserve el comportamiento de upstream.
+
+#### 2.8 Verificación
+
+Script `scripts/check-branding.mjs` (nuevo) que falle si encuentra marca
+ajena en el bundle construido:
+
+- `grep` de "Scratch" en `packages/scratch-gui/build/*.js` filtrando los
+  casos permitidos (Scratch Link, URLs de extensiones de hardware, nombres
+  de módulos npm).
+- `grep` de `googletagmanager|google-analytics` en `build/`.
+
+Se corre en la fase 2 y queda como red de seguridad para cada merge de
+upstream.
 
 ### Archivos tocados
 
-- Assets listados en 2.1
-- `src/playground/render-gui.jsx`, `src/playground/index.ejs`
-- `webpack.config.js`
-- `src/lib/analytics.js`
-- `src/lib/default-project/index.js`
-- `src/components/menu-bar/menu-bar.jsx` (una línea)
-- `brand/` (nuevo, raíz)
+Nuevos:
+
+- `brand/**`
+- `packages/scratch-gui/src/lib/st-playground-messages.js`
+- `scripts/check-branding.mjs`
+
+Reemplazados (mismo nombre): los 8 assets de 2.2, los 3-5 de 2.3.
+
+Editados: `webpack.config.js`, `src/playground/index.ejs`,
+`src/playground/render-gui.jsx`, `src/lib/analytics.js`,
+`src/lib/default-project/index.ts`, `src/lib/default-project/project-data.ts`,
+`src/lib/libraries/decks/index.jsx`, y los tres JSX de 2.7.
+
+Borrados: 1481 archivos de `decks/`.
 
 ### Criterios de aceptación
 
-- [ ] Checklist con captura de pantalla de: barra de menú, proyecto nuevo,
-      pantalla de carga, pestaña Disfraces, pestaña Sonidos, biblioteca de
-      extensiones. Sin la palabra "Scratch" ni el gato en ninguna.
+- [ ] Capturas de: barra de menú, proyecto nuevo, pantalla de carga, pestaña
+      Disfraces, pestaña Sonidos, biblioteca de extensiones, modo pantalla
+      completa. Sin "Scratch" ni el gato en ninguna.
+- [ ] El campo de título dice "Proyecto de ST-Playground" (o equivalente) y
+      no "Scratch Project", en español y en inglés.
+- [ ] La barra de menú no muestra Compartir, Ver página del proyecto,
+      Tutoriales, Únete, Iniciar sesión, Mis cosas ni mochila.
+- [ ] `node scripts/check-branding.mjs` pasa.
 - [ ] Con la pestaña Network abierta durante dos minutos de uso, cero
-      requests a `google-analytics.com`, `googletagmanager.com` ni
-      `*.scratch.mit.edu` salvo los assets de biblioteca (esos se resuelven
-      en la fase 3).
-- [ ] `git diff v15.1.1 --stat -- packages/scratch-gui` muestra cambios
-      concentrados en assets, `render-gui.jsx`, `index.ejs`,
-      `webpack.config.js`, `analytics.js`, `default-project/` y una línea de
-      `menu-bar.jsx`.
-- [ ] `npm run test:unit` sigue pasando.
+      requests a `googletagmanager.com` ni `google-analytics.com`. Los
+      requests a `cdn.assets.scratch.mit.edu` por las miniaturas de
+      biblioteca todavía aparecen: eso es la fase 3.
+- [ ] `npm run test:unit` sigue pasando (50 suites, 328 tests).
+- [ ] `git diff v15.1.1 --stat -- packages/scratch-gui` muestra ediciones
+      solo en los archivos listados arriba, y ningún JSX fuera de los tres
+      de 2.7.
 
 ---
 
@@ -317,7 +476,7 @@ junta los `md5ext` únicos (incluyendo disfraces y sonidos anidados en
 
 #### 3.3 Resolución de assets desde la GUI
 
-Crear `packages/scratch-gui/src/lib/<marca>-storage.js` con una
+Crear `packages/scratch-gui/src/lib/st-playground-storage.js` con una
 implementación de `GUIStorage` (interfaz en `src/gui-config.ts`):
 
 - `scratchStorage`: instancia de `ScratchStorage` con un `WebStore` apuntando
@@ -337,7 +496,7 @@ de medios de Scratch y las licencias de assets propios.
 ### Archivos tocados
 
 - `packages/scratch-gui/src/lib/libraries/*.json`
-- `packages/scratch-gui/src/lib/<marca>-storage.js` (nuevo)
+- `packages/scratch-gui/src/lib/st-playground-storage.js` (nuevo)
 - `packages/scratch-gui/src/playground/render-gui.jsx` (pasa el storage)
 - `scripts/fetch-library-assets.mjs` (nuevo)
 - `CREDITS.md` (nuevo)
@@ -375,7 +534,7 @@ Antes de escribir nada, decidir entre dos rutas:
 
 - Ruta A: forkear `scratch-desktop` y migrarlo de `@scratch/scratch-gui@13.7.4-svg`
   a la GUI 15.x del workspace.
-- Ruta B: shell Electron propio mínimo en `packages/<marca>-desktop`,
+- Ruta B: shell Electron propio mínimo en `packages/st-playground-desktop`,
   copiando de `scratch-desktop` solo las piezas necesarias.
 
 Procedimiento: clonar `scratch-desktop` en `/tmp`, apuntar su dependencia a
@@ -390,11 +549,11 @@ El resto de esta fase asume ruta B.
 
 #### 4.1 Workspace nuevo
 
-Agregar `packages/<marca>-desktop` al array `workspaces` de `package.json`
+Agregar `packages/st-playground-desktop` al array `workspaces` de `package.json`
 raíz (D-03). Estructura:
 
 ```
-packages/<marca>-desktop/
+packages/st-playground-desktop/
   package.json            productName, appId, electron, electron-builder
   webpack.main.js
   webpack.renderer.js
@@ -457,8 +616,8 @@ Script `fetch` en el `package.json` del desktop que invoca
 Scripts:
 
 ```bash
-npm run --workspace @<scope>/<marca>-desktop start        # dev con hot reload
-npm run --workspace @<scope>/<marca>-desktop dist         # fetch + compile + instalador
+npm run --workspace @st-playground/desktop start        # dev con hot reload
+npm run --workspace @st-playground/desktop dist         # fetch + compile + instalador
 ```
 
 #### 4.6 Documentación para la escuela
@@ -478,7 +637,7 @@ Crear `docs/guia-docente.md`:
 ### Archivos tocados
 
 - `package.json` raíz (`workspaces`)
-- `packages/<marca>-desktop/**` (nuevo)
+- `packages/st-playground-desktop/**` (nuevo)
 - `docs/instalacion-escuela.md`, `docs/guia-docente.md` (nuevos)
 
 ### Criterios de aceptación
@@ -520,7 +679,7 @@ alcanza. Un Moodle de pruebas (4.x) con permisos de administrador.
 
 ### Tareas
 
-#### 5.1 Workspace `packages/<marca>-web`
+#### 5.1 Workspace `packages/st-playground-web`
 
 Servidor Node con:
 
@@ -540,7 +699,7 @@ Servidor Node con:
 
 #### 5.2 Storage web
 
-Completar `<marca>-storage.js` (fase 3): `saveProject()` hace `PUT` al
+Completar `st-playground-storage.js` (fase 3): `saveProject()` hace `PUT` al
 backend, `setProjectHost`/`setProjectToken` reciben host y token de sesión.
 `ProjectSaverHOC` de la GUI ya dispara el autosave; el punto de montaje web
 pasa `canSave`, `projectHost`, `projectToken` y `projectId`.
@@ -562,8 +721,8 @@ nombre, correo ni dato personal sale de Moodle. Documentarlo en
 ### Archivos tocados
 
 - `package.json` raíz (`workspaces`)
-- `packages/<marca>-web/**` (nuevo)
-- `packages/scratch-gui/src/lib/<marca>-storage.js`
+- `packages/st-playground-web/**` (nuevo)
+- `packages/scratch-gui/src/lib/st-playground-storage.js`
 - `docs/privacidad.md`, `docs/moodle-lti.md` (nuevos)
 
 ### Criterios de aceptación
